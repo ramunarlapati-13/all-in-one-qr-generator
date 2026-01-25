@@ -3,7 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import { auth, db, rtdb } from './firebase';
 import { onAuthStateChanged } from 'firebase/auth';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
-import { ref, set, onDisconnect } from 'firebase/database';
+import { ref, set, get, onDisconnect } from 'firebase/database';
 import { QRCodeSVG } from 'qrcode.react';
 import {
   QrCode,
@@ -169,8 +169,14 @@ function App() {
           isOnline: true
         };
 
-        // Set data and handle disconnect
-        await set(userRef, baseData);
+        // Check for existing data to preserve createdAt
+        const snapshot = await get(userRef);
+        const existingData = snapshot.val();
+        const createdAt = existingData?.createdAt || Date.now();
+
+        // Set data with preserved createdAt
+        await set(userRef, { ...baseData, createdAt });
+
         onDisconnect(userRef).update({
           isOnline: false,
           lastActive: Date.now()
