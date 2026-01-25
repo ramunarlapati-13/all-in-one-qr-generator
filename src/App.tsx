@@ -102,46 +102,13 @@ function App() {
     };
   });
 
+  // 1. Auth Listener
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       setUser(currentUser);
       if (currentUser) {
         setShowLoginPopup(false);
-
-        // Tracking & Meta logic
-        const trackUser = async () => {
-          try {
-            const ipRes = await fetch('https://ipapi.co/json/');
-            const ipData = await ipRes.json();
-
-            const userRef = doc(db, 'users', currentUser.uid);
-            const userSnap = await getDoc(userRef);
-
-            const userData = {
-              uid: currentUser.uid,
-              email: currentUser.email,
-              username: bioData.name || 'Unknown',
-              lastActive: serverTimestamp(),
-              ip: ipData.ip || 'Unknown',
-              location: `${ipData.city}, ${ipData.region}, ${ipData.country_name}` || 'Unknown',
-              isOnline: true
-            };
-
-            if (!userSnap.exists()) {
-              await setDoc(userRef, {
-                ...userData,
-                createdAt: serverTimestamp(),
-              });
-            } else {
-              await setDoc(userRef, userData, { merge: true });
-            }
-          } catch (e) {
-            console.error('Tracking failed:', e);
-          }
-        };
-
-        trackUser();
-
+        // Load profile once
         try {
           const docRef = doc(db, 'profiles', currentUser.uid);
           const docSnap = await getDoc(docRef);
@@ -171,6 +138,57 @@ function App() {
     };
   }, [activeTab]);
 
+  // 2. Real-time User Tracking (The "Realtime Database" alternative)
+  useEffect(() => {
+    if (!user) return;
+
+    const trackUser = async () => {
+      try {
+        let ipData = { ip: 'Unknown', city: 'Unknown', region: 'Unknown', country_name: 'Unknown' };
+        try {
+          const ipRes = await fetch('https://ipapi.co/json/');
+          if (ipRes.ok) {
+            ipData = await ipRes.json();
+          }
+        } catch (e) {
+          console.warn('IP fetch blocked or failed');
+        }
+
+        const userRef = doc(db, 'users', user.uid);
+        const userSnap = await getDoc(userRef);
+
+        const baseData = {
+          uid: user.uid,
+          email: user.email,
+          username: bioData.name || 'Unknown',
+          lastActive: serverTimestamp(),
+          ip: ipData.ip || 'Unknown',
+          location: ipData.city !== 'Unknown' ? `${ipData.city}, ${ipData.region}, ${ipData.country_name}` : 'Unknown Location',
+          isOnline: true
+        };
+
+        if (!userSnap.exists()) {
+          await setDoc(userRef, {
+            ...baseData,
+            createdAt: serverTimestamp(),
+          });
+        } else {
+          await setDoc(userRef, baseData, { merge: true });
+        }
+        console.log("Activity tracked for:", user.email);
+      } catch (e) {
+        console.error('Tracking failed:', e);
+      }
+    };
+
+    trackUser();
+
+    // Pulse/Heartbeat every 2.5 minutes while logged in
+    const interval = setInterval(trackUser, 150000);
+    return () => clearInterval(interval);
+  }, [user, bioData.name]); // Re-track if name changes too
+
+  // 3. Profile Auto-save
   useEffect(() => {
     if (!user) return;
 
@@ -293,13 +311,13 @@ function App() {
                   <motion.div
                     initial={{ opacity: 0, scale: 0.95 }}
                     animate={{ opacity: 1, scale: 1 }}
-                    className="bg-[#1f1122]/40 backdrop-blur-2xl border border-white/5 p-6 sm:p-8 rounded-[24px] sm:rounded-[32px] shadow-2xl"
+                    className="bg-[#1f1122]/40 backdrop-blur-2xl border border-white/5 p-8 rounded-[32px] shadow-2xl"
                   >
                     <div className="flex items-center gap-3 mb-6">
                       <div className="p-2 bg-[#ce2bee]/10 rounded-lg text-[#ce2bee]">
                         <LinkIcon size={20} />
                       </div>
-                      <h2 className="text-lg sm:text-xl font-bold">QR Configuration</h2>
+                      <h2 className="text-xl font-bold">QR Configuration</h2>
                     </div>
 
                     <div className="space-y-6">
@@ -310,7 +328,7 @@ function App() {
                           value={url}
                           onChange={(e) => setUrl(e.target.value)}
                           placeholder="https://example.com"
-                          className="w-full bg-[#0a050c]/80 border border-white/10 rounded-2xl px-4 sm:px-5 py-3 sm:py-4 text-white focus:outline-none focus:border-[#ce2bee] transition-all font-medium focus:ring-4 focus:ring-[#ce2bee]/10 text-sm sm:text-base"
+                          className="w-full bg-[#0a050c]/80 border border-white/10 rounded-2xl px-5 py-4 text-white focus:outline-none focus:border-[#ce2bee] transition-all font-medium focus:ring-4 focus:ring-[#ce2bee]/10 text-sm sm:text-base"
                         />
                       </div>
 
@@ -348,14 +366,14 @@ function App() {
                   <motion.div
                     initial={{ opacity: 0, scale: 0.95 }}
                     animate={{ opacity: 1, scale: 1 }}
-                    className="bg-[#1f1122]/40 backdrop-blur-2xl border border-white/5 p-6 sm:p-8 rounded-[24px] sm:rounded-[32px] shadow-2xl"
+                    className="bg-[#1f1122]/40 backdrop-blur-2xl border border-white/5 p-8 rounded-[32px] shadow-2xl"
                   >
                     <div className="flex items-center justify-between mb-6 flex-wrap gap-4">
                       <div className="flex items-center gap-3">
                         <div className="p-2 bg-[#ce2bee]/10 rounded-lg text-[#ce2bee]">
                           <User size={20} />
                         </div>
-                        <h2 className="text-lg sm:text-xl font-bold">Bio Customizer</h2>
+                        <h2 className="text-xl font-bold">Bio Customizer</h2>
                       </div>
                       {user && (
                         <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-[9px] uppercase font-bold tracking-wider">
@@ -517,7 +535,7 @@ function App() {
                   <motion.div
                     initial={{ opacity: 0, scale: 0.95 }}
                     animate={{ opacity: 1, scale: 1 }}
-                    className="bg-[#1f1122]/40 backdrop-blur-2xl border border-white/5 p-6 sm:p-8 rounded-[24px] sm:rounded-[32px] shadow-2xl space-y-4"
+                    className="bg-[#1f1122]/40 backdrop-blur-2xl border border-white/5 p-8 rounded-[32px] shadow-2xl space-y-4"
                   >
                     <div className="flex items-center gap-3 mb-2">
                       <div className="p-2 bg-green-500/10 rounded-lg text-green-500">
@@ -584,7 +602,7 @@ function App() {
                   >
                     <Download size={20} /> <span className="uppercase">Download QR</span>
                   </button>
-                  <button className="w-14 h-14 sm:w-16 sm:h-16 bg-[#1f1122]/50 backdrop-blur-xl border border-white/10 rounded-[20px] sm:rounded-[24px] flex items-center justify-center hover:bg-[#ce2bee]/20 transition-all group shrink-0">
+                  <button className="w-14 h-14 sm:w-16 sm:h-16 bg-[#1f1122]/50 backdrop-blur-xl border border-white/10 rounded-[24px] flex items-center justify-center hover:bg-[#ce2bee]/20 transition-all group shrink-0">
                     <Share2 size={20} className="group-hover:scale-110 transition-transform" />
                   </button>
                 </div>
@@ -598,7 +616,7 @@ function App() {
                       initial={{ opacity: 0, scale: 0.9, rotateY: -20 }}
                       animate={{ opacity: 1, scale: 1, rotateY: 0 }}
                       exit={{ opacity: 0, scale: 0.9, rotateY: 20 }}
-                      className="bg-white p-8 sm:p-12 rounded-[40px] sm:rounded-[56px] shadow-[0_0_80px_rgba(206,43,238,0.3)] flex items-center justify-center border-[8px] sm:border-[12px] border-[#1f1122] w-fit"
+                      className="bg-white p-8 sm:p-12 rounded-[40px] sm:rounded-[56px] shadow-[0_0_80px_rgba(206,43,238,0.3)] flex items-center justify-center border-[12px] border-[#1f1122] w-fit"
                     >
                       <QRCodeSVG
                         id="qr-code-svg"
