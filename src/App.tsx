@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, lazy, Suspense } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { auth, db, rtdb } from './firebase';
 import { onAuthStateChanged } from 'firebase/auth';
@@ -25,8 +25,10 @@ import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import LZString from 'lz-string';
 import BioPage from './components/BioPage';
-import LoginPage from './components/LoginPage';
-import AdminPage from './components/AdminPage';
+
+// Optimize secondary components with lazy loading
+const LoginPage = lazy(() => import('./components/LoginPage'));
+const AdminPage = lazy(() => import('./components/AdminPage'));
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -342,7 +344,9 @@ function App() {
 
         <main>
           {activeTab === 'admin' ? (
-            <AdminPage />
+            <Suspense fallback={<div className="p-20 flex justify-center"><div className="w-8 h-8 border-4 border-[#ce2bee]/20 border-t-[#ce2bee] rounded-full animate-spin" /></div>}>
+              <AdminPage />
+            </Suspense>
           ) : (
             <div className="flex flex-col gap-12 max-w-3xl mx-auto">
               {/* Configuration Panel */}
@@ -704,7 +708,9 @@ function App() {
                           <h2 className="text-white text-base font-bold tracking-tight uppercase tracking-widest">Login / Security</h2>
                         </div>
                         <div className="p-4 sm:p-6">
-                          <LoginPage />
+                          <Suspense fallback={<div className="h-64 flex items-center justify-center"><div className="w-8 h-8 border-4 border-[#ce2bee]/20 border-t-[#ce2bee] rounded-full animate-spin" /></div>}>
+                            <LoginPage />
+                          </Suspense>
                         </div>
                       </div>
                     </motion.div>
@@ -771,7 +777,9 @@ function App() {
                   </div>
 
                   <div className="p-4 sm:p-6 max-h-[60vh] overflow-y-auto custom-scrollbar">
-                    <LoginPage />
+                    <Suspense fallback={<div className="h-64 flex items-center justify-center"><div className="w-8 h-8 border-4 border-[#ce2bee]/20 border-t-[#ce2bee] rounded-full animate-spin" /></div>}>
+                      <LoginPage />
+                    </Suspense>
                   </div>
 
                   <div className="p-4 bg-[#1f1122]/30 border-t border-white/5 text-center">
