@@ -1,5 +1,8 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
+import { auth, db } from './firebase';
+import { onAuthStateChanged } from 'firebase/auth';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { QRCodeSVG } from 'qrcode.react';
 import {
   QrCode,
@@ -12,7 +15,8 @@ import {
   Plus,
   Trash2,
   Copy,
-  Check
+  Check,
+  Cloud
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { clsx, type ClassValue } from 'clsx';
@@ -35,6 +39,13 @@ interface BioLink {
   icon: IconType;
 }
 
+interface BioData {
+  name: string;
+  role: string;
+  avatarUrl: string;
+  links: BioLink[];
+}
+
 function App() {
   const [searchParams] = useSearchParams();
   const [activeTab, setActiveTab] = useState<Tab>('bio');
@@ -43,30 +54,20 @@ function App() {
   const [qrBgColor, setQrBgColor] = useState('#ffffff');
   const [copying, setCopying] = useState(false);
   const [showLoginPopup, setShowLoginPopup] = useState(false);
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      if (activeTab !== 'settings') {
-        setShowLoginPopup(true);
-      }
-    }, 60000); // 1 minute
-
-    return () => clearTimeout(timer);
-  }, [activeTab]);
+  const [user, setUser] = useState<any>(null);
+  const [saving, setSaving] = useState(false);
+  const [lastSaved, setLastSaved] = useState<Date | null>(null);
 
   // Bio Page State
-  const [bioData, setBioData] = useState(() => {
+  const [bioData, setBioData] = useState<BioData>(() => {
     const dataParam = searchParams.get('d');
     if (dataParam) {
       try {
         const decompressed = LZString.decompressFromEncodedURIComponent(dataParam);
         if (decompressed) {
           const parsed = JSON.parse(decompressed);
-          // Handle minified data
           if (parsed.n || parsed.r) {
-            // Side-effect: Sync QR color if present
             if (parsed.c) setTimeout(() => setQrColor(parsed.c), 0);
-
             return {
               name: parsed.n || '',
               role: parsed.r || '',
@@ -87,7 +88,7 @@ function App() {
     return {
       name: 'Sophia Carter',
       role: 'Digital Artist',
-      avatarUrl: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400',
+      avatarUrl: '/default-avatar.jpg',
       links: [
         { label: 'Instagram', url: 'https://instagram.com', icon: 'instagram' },
         { label: 'YouTube', url: 'https://youtube.com', icon: 'youtube' },
@@ -99,8 +100,56 @@ function App() {
     };
   });
 
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+      setUser(currentUser);
+      if (currentUser) {
+        setShowLoginPopup(false);
+        try {
+          const docRef = doc(db, 'profiles', currentUser.uid);
+          const docSnap = await getDoc(docRef);
+          if (docSnap.exists()) {
+            setBioData(docSnap.data() as any);
+            setLastSaved(new Date());
+          }
+        } catch (e) {
+          console.error('Error loading profile:', e);
+        }
+      }
+    });
+
+    const timer = setTimeout(() => {
+      if (!auth.currentUser && activeTab !== 'settings') {
+        setShowLoginPopup(true);
+      }
+    }, 60000);
+
+    return () => {
+      unsubscribe();
+      clearTimeout(timer);
+    };
+  }, [activeTab]);
+
+  // Auto-save logic
+  useEffect(() => {
+    if (!user) return;
+
+    const timeoutId = setTimeout(async () => {
+      setSaving(true);
+      try {
+        await setDoc(doc(db, 'profiles', user.uid), bioData);
+        setLastSaved(new Date());
+      } catch (e) {
+        console.error('Auto-save failed:', e);
+      } finally {
+        setSaving(false);
+      }
+    }, 2000); // 2 second debounce
+
+    return () => clearTimeout(timeoutId);
+  }, [bioData, user?.uid]);
+
   const shareableUrl = useMemo(() => {
-    // Minify data to key single characters to reduce URL length
     const minifiedData = {
       n: bioData.name,
       r: bioData.role,
@@ -145,14 +194,12 @@ function App() {
 
   return (
     <div className="min-h-screen bg-[#0a050c] text-white selection:bg-[#ce2bee]/30">
-      {/* Dynamic Background */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-[#ce2bee]/20 blur-[120px] rounded-full animate-pulse" />
         <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-[#422348]/30 blur-[120px] rounded-full" />
       </div>
 
       <div className="relative z-10 container mx-auto px-6 py-12">
-        {/* Header */}
         <header className="flex flex-col md:flex-row items-center justify-between mb-16 space-y-6 md:space-y-0">
           <motion.div
             initial={{ opacity: 0, x: -20 }}
@@ -164,7 +211,7 @@ function App() {
             </div>
             <div>
               <h1 className="text-3xl font-black tracking-tight bg-gradient-to-r from-white to-[#c092c9] bg-clip-text text-transparent">
-                STITCH QR
+                AIO QR
               </h1>
               <p className="text-[#c092c9] text-sm font-medium">All-in-One Generator</p>
             </div>
@@ -192,11 +239,7 @@ function App() {
         </header>
 
         <main className="grid lg:grid-cols-2 gap-12 items-start">
-          {/* Left Panel: Inputs */}
-          <motion.div
-            layout
-            className="space-y-8"
-          >
+          <motion.div layout className="space-y-8">
             {activeTab === 'qr' && (
               <motion.div
                 initial={{ opacity: 0, scale: 0.95 }}
@@ -258,11 +301,28 @@ function App() {
                 animate={{ opacity: 1, scale: 1 }}
                 className="bg-[#1f1122]/40 backdrop-blur-2xl border border-white/5 p-8 rounded-[32px] shadow-2xl"
               >
-                <div className="flex items-center gap-3 mb-6">
-                  <div className="p-2 bg-[#ce2bee]/10 rounded-lg text-[#ce2bee]">
-                    <User size={20} />
+                <div className="flex items-center justify-between mb-6">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-[#ce2bee]/10 rounded-lg text-[#ce2bee]">
+                      <User size={20} />
+                    </div>
+                    <h2 className="text-xl font-bold">Bio Profile Customizer</h2>
                   </div>
-                  <h2 className="text-xl font-bold">Bio Profile Customizer</h2>
+                  {user && (
+                    <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-[10px] uppercase font-bold tracking-wider">
+                      {saving ? (
+                        <>
+                          <div className="w-2 h-2 border-2 border-[#ce2bee]/30 border-t-[#ce2bee] rounded-full animate-spin" />
+                          <span className="text-[#ce2bee]">Syncing...</span>
+                        </>
+                      ) : (
+                        <>
+                          <div className="w-2 h-2 bg-green-500 rounded-full" />
+                          <span className="text-green-500/70">Synced {lastSaved?.toLocaleTimeString()}</span>
+                        </>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 <div className="space-y-6">
@@ -303,39 +363,36 @@ function App() {
                               const file = e.target.files?.[0];
                               if (file) {
                                 const reader = new FileReader();
-                                reader.onloadend = () => {
+                                reader.onload = () => {
                                   const img = new Image();
-                                  img.src = reader.result as string;
                                   img.onload = () => {
-                                    const canvas = document.createElement('canvas');
-                                    const ctx = canvas.getContext('2d');
-                                    const maxSize = 150;
-                                    let width = img.width;
-                                    let height = img.height;
-                                    if (width > height) {
-                                      if (width > maxSize) {
-                                        height *= maxSize / width;
-                                        width = maxSize;
-                                      }
-                                    } else {
-                                      if (height > maxSize) {
-                                        width *= maxSize / height;
-                                        height = maxSize;
-                                      }
+                                    try {
+                                      const canvas = document.createElement('canvas');
+                                      const ctx = canvas.getContext('2d');
+                                      const size = 300;
+                                      canvas.width = size;
+                                      canvas.height = size;
+                                      const minDim = Math.min(img.width, img.height);
+                                      const startX = (img.width - minDim) / 2;
+                                      const startY = (img.height - minDim) / 2;
+                                      ctx?.drawImage(img, startX, startY, minDim, minDim, 0, 0, size, size);
+                                      const compressedBase64 = canvas.toDataURL('image/jpeg', 0.8);
+                                      setBioData((prev: BioData) => ({ ...prev, avatarUrl: compressedBase64 }));
+                                    } catch (err) {
+                                      console.error('Canvas processing error:', err);
+                                      alert('Failed to process image.');
                                     }
-                                    canvas.width = width;
-                                    canvas.height = height;
-                                    ctx?.drawImage(img, 0, 0, width, height);
-                                    const compressedBase64 = canvas.toDataURL('image/jpeg', 0.7);
-                                    setBioData({ ...bioData, avatarUrl: compressedBase64 });
                                   };
+                                  img.onerror = () => alert('Failed to load image file.');
+                                  img.src = reader.result as string;
                                 };
+                                reader.onerror = () => alert('Failed to read file.');
                                 reader.readAsDataURL(file);
                               }
                             }}
                           />
                         </label>
-                        <p className="text-[10px] text-[#c092c9] mt-2">Max 150px (auto-resized)</p>
+                        <p className="text-[10px] text-[#c092c9] mt-2">1:1 Square (auto-cropped)</p>
                       </div>
                     </div>
                   </div>
@@ -350,7 +407,6 @@ function App() {
                             onChange={(e) => {
                               const newLinks = [...bioData.links];
                               newLinks[idx].icon = e.target.value as any;
-                              // Automatically set the label to the selected option text
                               newLinks[idx].label = e.target.options[e.target.selectedIndex].text;
                               setBioData({ ...bioData, links: newLinks });
                             }}
@@ -408,28 +464,43 @@ function App() {
               </motion.div>
             )}
 
-            {activeTab === 'settings' && (
+            {activeTab === 'settings' && user && (
               <motion.div
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
-                className="bg-[#1f1122]/40 backdrop-blur-2xl border border-white/5 p-8 rounded-[32px] shadow-2xl flex flex-col items-center justify-center min-h-[300px] text-center"
+                className="bg-[#1f1122]/40 backdrop-blur-2xl border border-white/5 p-8 rounded-[32px] shadow-2xl space-y-4"
               >
-                <div className="p-4 bg-[#ce2bee]/10 rounded-full text-[#ce2bee] mb-4">
-                  <Settings size={32} />
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="p-2 bg-green-500/10 rounded-lg text-green-500">
+                    <Check size={20} />
+                  </div>
+                  <h2 className="text-xl font-bold">Account Session</h2>
                 </div>
+                <div className="bg-[#0a050c]/50 p-6 rounded-2xl border border-white/5 text-center">
+                  <p className="text-[#c092c9] text-sm mb-1 uppercase tracking-widest font-bold">Logged in as</p>
+                  <p className="text-white font-mono text-lg truncate">{user.email}</p>
+                </div>
+                <button
+                  onClick={() => auth.signOut()}
+                  className="w-full bg-white/5 hover:bg-red-500/20 text-white/60 hover:text-red-400 py-3 rounded-xl border border-white/10 hover:border-red-500/30 font-bold transition-all"
+                >
+                  SIGN OUT
+                </button>
               </motion.div>
             )}
 
-            {/* Shareable Link Box */}
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               className="bg-[#ce2bee]/5 border border-[#ce2bee]/20 p-6 rounded-[24px] flex flex-col gap-4"
             >
               <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-[#ce2bee] text-xs font-black uppercase tracking-widest">Shareable Profile Link</p>
-                  <p className="text-white/40 text-[10px]">Links update instantly based on your changes</p>
+                <div className="flex items-center gap-2">
+                  <Cloud size={16} className="text-[#ce2bee]" />
+                  <div>
+                    <p className="text-[#ce2bee] text-xs font-black uppercase tracking-widest">Shareable Profile Link</p>
+                    <p className="text-white/40 text-[10px]">Links update instantly based on your changes</p>
+                  </div>
                 </div>
                 <button
                   onClick={copyToClipboard}
@@ -439,7 +510,6 @@ function App() {
                 </button>
               </div>
 
-              {/* Mini QR Code */}
               <div className="flex justify-center py-2">
                 <div className="bg-white p-3 rounded-xl shadow-lg">
                   <QRCodeSVG
@@ -458,7 +528,6 @@ function App() {
               </div>
             </motion.div>
 
-            {/* Common Action Buttons */}
             <div className="flex gap-4">
               <button
                 onClick={downloadQR}
@@ -472,7 +541,6 @@ function App() {
             </div>
           </motion.div>
 
-          {/* Right Panel: Preview */}
           <div className="relative sticky top-12 flex flex-col items-center">
             <AnimatePresence mode="wait">
               {activeTab === 'qr' ? (
@@ -501,11 +569,7 @@ function App() {
                   exit={{ opacity: 0, scale: 0.9, y: -30 }}
                   className="w-full flex justify-center"
                 >
-                  <BioPage
-                    {...bioData}
-                    qrValue={shareableUrl}
-                    qrColor={qrColor}
-                  />
+                  <BioPage {...bioData} />
                 </motion.div>
               ) : (
                 <motion.div
@@ -520,9 +584,8 @@ function App() {
               )}
             </AnimatePresence>
 
-            {/* Popup Logic */}
             <AnimatePresence>
-              {showLoginPopup && activeTab !== 'settings' && (
+              {showLoginPopup && !user && activeTab !== 'settings' && (
                 <motion.div
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
@@ -553,12 +616,12 @@ function App() {
                 Live Branding Active
               </div>
               <p className="text-sm font-medium text-white/40">
-                {activeTab === 'qr' ? 'Branded QR Code' : activeTab === 'settings' ? 'Login & Settings Preview' : 'Profile Preview (No Mobile Frame)'}
+                {activeTab === 'qr' ? 'Branded QR Code' : activeTab === 'settings' ? 'Account Settings' : 'Profile Preview'}
               </p>
             </div>
           </div>
         </main>
-      </div >
+      </div>
 
       <footer className="w-full text-center py-6 mt-12 text-white/20 text-xs text-[#c092c9]">
         <p>Developed by Rexplore Technologies &copy; 2026</p>
@@ -580,7 +643,7 @@ function App() {
           color: white;
         }
       `}</style>
-    </div >
+    </div>
   );
 }
 

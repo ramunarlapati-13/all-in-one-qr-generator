@@ -16,8 +16,6 @@ interface BioPageProps {
     name: string;
     role: string;
     avatarUrl: string;
-    qrValue: string;
-    qrColor: string;
     links: {
         label: string;
         url: string;
