@@ -24,12 +24,22 @@ const LoginPage: React.FC = () => {
 
     const handleGoogleSignIn = async () => {
         setError('');
+        setMessage('');
         setLoading(true);
         const provider = new GoogleAuthProvider();
         try {
             await signInWithPopup(auth, provider);
         } catch (err: any) {
-            setError(err.message);
+            console.error("Google Sign In Error:", err);
+            if (err.code === 'auth/popup-closed-by-user') {
+                setError('Sign in cancelled.');
+            } else if (err.code === 'auth/operation-not-allowed') {
+                setError('Google Sign In is not enabled in Firebase Console.');
+            } else if (err.code === 'auth/unauthorized-domain') {
+                setError('This domain is not authorized in Firebase Console.');
+            } else {
+                setError(err.message);
+            }
         } finally {
             setLoading(false);
         }
