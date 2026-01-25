@@ -338,7 +338,7 @@ function App() {
               <h1 className="text-2xl sm:text-3xl font-black tracking-tight bg-gradient-to-r from-white to-[#c092c9] bg-clip-text text-transparent">
                 AIO REXPO QR
               </h1>
-              <p className="text-[#c092c9] text-sm font-medium">All-in-One Generator</p>
+              <p className="text-[#c092c9] text-sm font-medium">All in one QR Generator</p>
             </div>
           </motion.div>
 
