@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { auth, db, rtdb } from './firebase';
 import { onAuthStateChanged } from 'firebase/auth';
-import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { ref, set, onDisconnect, serverTimestamp as rtdbTimestamp } from 'firebase/database';
 import { QRCodeSVG } from 'qrcode.react';
 import {
@@ -60,6 +60,7 @@ function App() {
   const [user, setUser] = useState<any>(null);
   const [saving, setSaving] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
+  const [showShareToast, setShowShareToast] = useState(false);
 
 
   // Bio Page State
@@ -239,8 +240,16 @@ function App() {
   };
 
   const downloadQR = () => {
-    const svg = document.getElementById('qr-code-svg');
-    if (!svg) return;
+    if (!user) {
+      setShowLoginPopup(true);
+      return;
+    }
+    // We target the hidden downloader QR which is always present and high-res
+    const svg = document.getElementById('qr-code-downloader');
+    if (!svg) {
+      console.error('QR element not found');
+      return;
+    }
     const svgData = new XMLSerializer().serializeToString(svg);
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d');
@@ -256,6 +265,16 @@ function App() {
       downloadLink.click();
     };
     img.src = `data:image/svg+xml;base64,${btoa(svgData)}`;
+  };
+
+  const handleShare = () => {
+    if (!user) {
+      setShowLoginPopup(true);
+      return;
+    }
+    navigator.clipboard.writeText(shareableUrl);
+    setShowShareToast(true);
+    setTimeout(() => setShowShareToast(false), 2000);
   };
 
   return (
@@ -618,7 +637,10 @@ function App() {
                     >
                       <Download size={20} /> <span className="uppercase">Download QR</span>
                     </button>
-                    <button className="w-14 h-14 sm:w-16 sm:h-16 bg-[#1f1122]/50 backdrop-blur-xl border border-white/10 rounded-[24px] flex items-center justify-center hover:bg-[#ce2bee]/20 transition-all group shrink-0">
+                    <button
+                      onClick={handleShare}
+                      className="w-14 h-14 sm:w-16 sm:h-16 bg-[#1f1122]/50 backdrop-blur-xl border border-white/10 rounded-[24px] flex items-center justify-center hover:bg-[#ce2bee]/20 transition-all group shrink-0 relative"
+                    >
                       <Share2 size={20} className="group-hover:scale-110 transition-transform" />
                     </button>
                   </div>
@@ -727,12 +749,12 @@ function App() {
                         <Cloud className="text-white" size={20} />
                       </div>
                       <div>
-                        <h2 className="text-lg sm:text-xl font-black text-white leading-none">Cloud Sync</h2>
-                        <p className="text-[#ce2bee] text-[9px] font-bold uppercase tracking-[0.1em] mt-1">Premium Feature</p>
+                        <h2 className="text-lg sm:text-xl font-black text-white leading-none">Get Started</h2>
+                        <p className="text-[#ce2bee] text-[9px] font-bold uppercase tracking-[0.1em] mt-1">100% Free</p>
                       </div>
                     </div>
                     <p className="text-[#c092c9] text-xs sm:text-sm leading-relaxed">
-                      Login now to securely store your Rexpo profiles and access them from any device.
+                      Create your all in one QR completely for free.
                     </p>
                   </div>
 
@@ -752,9 +774,36 @@ function App() {
         </AnimatePresence>
       </div>
 
+      {/* Hidden High-Res QR for Downloading */}
+      <div className="absolute top-0 left-[-9999px] invisible">
+        <QRCodeSVG
+          id="qr-code-downloader"
+          value={activeTab === 'qr' ? (url || window.location.origin) : (shareableUrl || window.location.origin)}
+          size={1024}
+          fgColor={qrColor}
+          bgColor={qrBgColor}
+          level="H" // High error correction for best print quality
+          includeMargin={true}
+        />
+      </div>
+
       <footer className="w-full text-center py-6 mt-12 text-white/20 text-[10px] uppercase font-black tracking-widest border-t border-white/5 bg-[#0a050c]/80 backdrop-blur-md">
         <p>Developed by Rexplore Technologies &copy; 2026</p>
       </footer>
+
+      <AnimatePresence>
+        {showShareToast && (
+          <motion.div
+            initial={{ opacity: 0, y: 50 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 50 }}
+            className="fixed bottom-8 left-1/2 -translate-x-1/2 z-[200] bg-[#ce2bee] text-white px-6 py-3 rounded-2xl shadow-xl font-bold text-sm flex items-center gap-2"
+          >
+            <Check size={18} />
+            Link Copied to Clipboard!
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <style>{`
         .custom-scrollbar::-webkit-scrollbar {
