@@ -51,6 +51,20 @@ interface BioData {
   links: BioLink[];
 }
 
+const DEFAULT_BIO_DATA: BioData = {
+  name: 'Rexplorer',
+  role: 'Developer',
+  avatarUrl: '/default-avatar.jpg',
+  links: [
+    { label: 'Instagram', url: 'https://instagram.com', icon: 'instagram' },
+    { label: 'YouTube', url: 'https://youtube.com', icon: 'youtube' },
+    { label: 'Twitter / X', url: 'https://x.com', icon: 'twitter' },
+    { label: 'LinkedIn', url: 'https://linkedin.com', icon: 'linkedin' },
+    { label: 'GitHub', url: 'https://github.com', icon: 'github' },
+    { label: 'Store', url: 'https://shop.com', icon: 'shop' },
+  ]
+};
+
 function App() {
   const [searchParams] = useSearchParams();
   const [activeTab, setActiveTab] = useState<Tab>('bio');
@@ -63,6 +77,7 @@ function App() {
   const [saving, setSaving] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [showShareToast, setShowShareToast] = useState(false);
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
 
 
   // Bio Page State
@@ -92,28 +107,16 @@ function App() {
         console.error('Failed to parse initial data', e);
       }
     }
-    return {
-      name: 'Rexplorer',
-      role: 'Developer',
-      avatarUrl: '/default-avatar.jpg',
-      links: [
-        { label: 'Instagram', url: 'https://instagram.com', icon: 'instagram' },
-        { label: 'YouTube', url: 'https://youtube.com', icon: 'youtube' },
-        { label: 'Twitter / X', url: 'https://x.com', icon: 'twitter' },
-        { label: 'LinkedIn', url: 'https://linkedin.com', icon: 'linkedin' },
-        { label: 'GitHub', url: 'https://github.com', icon: 'github' },
-        { label: 'Store', url: 'https://shop.com', icon: 'shop' },
-      ] as BioLink[]
-    };
+    return DEFAULT_BIO_DATA;
   });
 
-  // 1. Auth Listener
+  // 1. Auth & Data Sync
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
-      setUser(currentUser);
       if (currentUser) {
+        setIsInitialLoad(true); // Block auto-save until fetch completes
+        setUser(currentUser);
         setShowLoginPopup(false);
-        // Load profile once
         try {
           const docRef = doc(db, 'profiles', currentUser.uid);
           const docSnap = await getDoc(docRef);
@@ -121,13 +124,28 @@ function App() {
             const data = docSnap.data();
             setBioData(data as BioData);
             if (data.qrColor) setQrColor(data.qrColor);
+            if (data.qrBgColor) setQrBgColor(data.qrBgColor);
             setLastSaved(new Date());
           }
         } catch (e) {
           console.error('Error loading profile:', e);
+        } finally {
+          setIsInitialLoad(false);
         }
+      } else {
+        setUser(null);
+        setBioData(DEFAULT_BIO_DATA);
+        setQrColor('#000000');
+        setQrBgColor('#ffffff');
+        setIsInitialLoad(false);
       }
     });
+    return () => unsubscribe();
+  }, []);
+
+  // 2. Login Popup Timer
+  useEffect(() => {
+    if (user) return;
 
     const timer = setTimeout(() => {
       if (!auth.currentUser && activeTab !== 'settings') {
@@ -139,11 +157,8 @@ function App() {
       setShowLoginPopup(true);
     }
 
-    return () => {
-      unsubscribe();
-      clearTimeout(timer);
-    };
-  }, [activeTab]);
+    return () => clearTimeout(timer);
+  }, [activeTab, user]);
 
   // 2. Real-time User Tracking (RTDB)
   useEffect(() => {
@@ -201,22 +216,33 @@ function App() {
 
   // 3. Profile Auto-save
   useEffect(() => {
-    if (!user) return;
+    if (!user || isInitialLoad) return;
 
     const timeoutId = setTimeout(async () => {
       setSaving(true);
       try {
-        await setDoc(doc(db, 'profiles', user.uid), { ...bioData, qrColor });
+        const profileData = {
+          ...bioData,
+          qrColor,
+          qrBgColor,
+          updatedAt: Date.now()
+        };
+        await setDoc(doc(db, 'profiles', user.uid), profileData);
         setLastSaved(new Date());
+        console.log('Profile auto-saved successfully');
       } catch (e) {
         console.error('Auto-save failed:', e);
+        // If it's a permission error, it might be due to Firestore rules
+        if (e instanceof Error && e.message.includes('permission-denied')) {
+          console.error('Firestore permission denied. Check security rules.');
+        }
       } finally {
         setSaving(false);
       }
     }, 2000);
 
     return () => clearTimeout(timeoutId);
-  }, [bioData, user?.uid, qrColor]);
+  }, [bioData, user?.uid, qrColor, qrBgColor]);
 
   const shareableUrl = useMemo(() => {
     if (user && user.uid) {
