@@ -3,7 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import { auth, db, rtdb } from './firebase';
 import { onAuthStateChanged } from 'firebase/auth';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
-import { ref, set, onDisconnect, serverTimestamp as rtdbTimestamp } from 'firebase/database';
+import { ref, set, onDisconnect } from 'firebase/database';
 import { QRCodeSVG } from 'qrcode.react';
 import {
   QrCode,
@@ -163,7 +163,7 @@ function App() {
           uid: user.uid,
           email: user.email,
           username: bioData.name || 'Unknown',
-          lastActive: rtdbTimestamp(),
+          lastActive: Date.now(),
           ip: ipData.ip || 'Unknown',
           location: ipData.city !== 'Unknown' ? `${ipData.city}, ${ipData.region}, ${ipData.country_name}` : 'Unknown Location',
           isOnline: true
@@ -173,7 +173,7 @@ function App() {
         await set(userRef, baseData);
         onDisconnect(userRef).update({
           isOnline: false,
-          lastActive: rtdbTimestamp()
+          lastActive: Date.now()
         });
 
         console.log("Activity tracked (RTDB) for:", user.email);

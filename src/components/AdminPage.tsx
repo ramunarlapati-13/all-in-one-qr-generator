@@ -8,8 +8,8 @@ interface UserStatus {
     uid: string;
     email: string;
     username: string;
-    createdAt?: number | object;
-    lastActive?: number | object;
+    createdAt?: number;
+    lastActive?: number;
     isOnline?: boolean;
 }
 
@@ -26,12 +26,9 @@ const AdminPage: React.FC = () => {
                 // Convert object { uid: { data... } } to array
                 const usersList = Object.values(data) as UserStatus[];
 
-                // Sort by lastActive if available, otherwise createdAt
-                // Note: RTDB timestamps might be just numbers (milliseconds)
+                // Sort by lastActive
                 const sortedUsers = usersList.sort((a, b) => {
-                    const timeA = (typeof a.lastActive === 'number' ? a.lastActive : 0);
-                    const timeB = (typeof b.lastActive === 'number' ? b.lastActive : 0);
-                    return timeB - timeA;
+                    return (b.lastActive || 0) - (a.lastActive || 0);
                 });
 
                 setUsers(sortedUsers);
@@ -52,13 +49,9 @@ const AdminPage: React.FC = () => {
         return () => unsubscribe();
     }, []);
 
-    const formatTime = (timestamp: any) => {
+    const formatTime = (timestamp?: number) => {
         if (!timestamp) return 'No record';
-        // Handle RTDB serverTimestamp (which is milliseconds)
-        if (typeof timestamp === 'number') {
-            return new Date(timestamp).toLocaleString();
-        }
-        return 'Just now';
+        return new Date(timestamp).toLocaleString();
     };
 
     if (loading) {
