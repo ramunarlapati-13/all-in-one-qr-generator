@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
-import { Plus, Trash2, Download, Zap, ExternalLink, ShieldCheck, Smartphone, MousePointer2, Copy, Check } from 'lucide-react';
+import { Plus, Trash2, Download, Zap, MousePointer2, Copy, Check, ShieldCheck } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const PLATFORMS = [
@@ -46,7 +46,7 @@ export default function Creator() {
         }));
     };
 
-    // Improved Encoding Logic
+    // Auto-generate URL whenever profile changes
     useEffect(() => {
         try {
             const validLinks = profile.links.filter(l => l.url.trim() !== '');
@@ -56,13 +56,15 @@ export default function Creator() {
                 l: validLinks.map(l => ({ p: l.platform, u: l.url }))
             };
 
-            // Use a more robust encoding for characters like emojis
             const jsonString = JSON.stringify(data);
             const utf8SafeString = encodeURIComponent(jsonString);
             const encoded = btoa(utf8SafeString);
 
-            const baseUrl = `${window.location.origin}/profile`;
-            setGeneratedUrl(`${baseUrl}?d=${encoded}`);
+            // Use window.location.origin but treat it as a side effect or ensure it's available
+            const baseUrl = typeof window !== 'undefined' ? `${window.location.origin}/profile` : '';
+            if (baseUrl) {
+                setGeneratedUrl(`${baseUrl}?d=${encoded}`);
+            }
         } catch (e) {
             console.error("QR Generation Error:", e);
         }
@@ -84,7 +86,7 @@ export default function Creator() {
         const img = new Image();
 
         img.onload = () => {
-            canvas.width = 1000; // High resolution
+            canvas.width = 1000;
             canvas.height = 1000;
             ctx.fillStyle = "white";
             ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -100,139 +102,134 @@ export default function Creator() {
     };
 
     return (
-        <div className="max-w-[1400px] mx-auto px-4 py-8">
+        <div className="max-w-3xl mx-auto px-4 py-8">
             {/* Header */}
-            <header className="text-center mb-12">
+            <header className="text-center mb-8 md:mb-12">
                 <motion.div
                     initial={{ opacity: 0, scale: 0.9 }}
                     animate={{ opacity: 1, scale: 1 }}
-                    className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 text-xs font-bold uppercase tracking-widest text-purple-400 mb-4"
+                    className="inline-flex items-center gap-2 px-3 py-1.5 md:px-4 md:py-2 rounded-full bg-white/5 border border-white/10 text-[10px] md:text-xs font-bold uppercase tracking-widest text-purple-400 mb-4"
                 >
-                    <Zap size={14} fill="currentColor" /> QR QR Multi-Link Generator
+                    <Zap size={12} fill="currentColor" /> All-in-One Multi-Link QR
                 </motion.div>
-                <h1 className="text-5xl md:text-7xl font-black mb-4">
-                    Super <span className="gradient-text">QR Link.</span>
+                <h1 className="text-4xl md:text-7xl font-black mb-4 leading-tight">
+                    One QR. <span className="gradient-text">All Your Links.</span>
                 </h1>
-                <p className="text-gray-400 text-lg max-w-2xl mx-auto">
-                    One single QR code for all your social identities. No sign-up required.
+                <p className="text-gray-400 text-sm md:text-lg max-w-2xl mx-auto px-4">
+                    Create a single scannable QR code for all your social identities. No sign-up required.
                 </p>
             </header>
 
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-start mt-8">
+            {/* Main Content - Centered */}
+            <div className="space-y-8 max-w-2xl mx-auto">
 
-                {/* Editor (Left) */}
-                <div className="lg:col-span-7 space-y-8">
-                    <motion.div
-                        initial={{ opacity: 0, x: -20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        className="glass-card rounded-[2.5rem] p-10 border border-white/10"
-                    >
-                        <div className="flex items-center gap-4 mb-10">
-                            <div className="w-12 h-12 rounded-2xl bg-purple-500/20 flex items-center justify-center text-purple-400">
-                                <MousePointer2 size={24} />
-                            </div>
-                            <div>
-                                <h2 className="text-2xl font-bold text-white">Design Your Hub</h2>
-                                <p className="text-sm text-gray-500">Fill your details to update the QR live</p>
-                            </div>
+                {/* Profile Editor */}
+                <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="glass-card rounded-[2rem] md:rounded-[2.5rem] p-6 md:p-10 border border-white/10"
+                >
+                    <div className="flex flex-col md:flex-row items-center gap-4 mb-8 md:mb-10 justify-center text-center">
+                        <div className="w-12 h-12 rounded-2xl bg-purple-500/20 flex items-center justify-center text-purple-400 shrink-0">
+                            <MousePointer2 size={24} />
+                        </div>
+                        <div>
+                            <h2 className="text-xl md:text-2xl font-bold text-white">Design Your Hub</h2>
+                            <p className="text-xs md:text-sm text-gray-500">Fill your details to update the QR live</p>
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8 mb-8 md:mb-10">
+                        <div className="space-y-2 md:space-y-3">
+                            <label className="text-xs md:text-sm font-bold text-gray-400 ml-1 block text-center md:text-left">Profile Name</label>
+                            <input
+                                type="text"
+                                placeholder="Enter your name..."
+                                className="input-field py-3 md:py-4 text-center md:text-left"
+                                value={profile.name}
+                                onChange={e => setProfile({ ...profile, name: e.target.value })}
+                            />
+                        </div>
+                        <div className="space-y-2 md:space-y-3">
+                            <label className="text-xs md:text-sm font-bold text-gray-400 ml-1 block text-center md:text-left">One-line Bio</label>
+                            <input
+                                type="text"
+                                placeholder="Tell the world about you..."
+                                className="input-field py-3 md:py-4 text-center md:text-left"
+                                value={profile.bio}
+                                onChange={e => setProfile({ ...profile, bio: e.target.value })}
+                            />
+                        </div>
+                    </div>
+
+                    <div className="space-y-6">
+                        <div className="flex justify-between items-center px-1">
+                            <label className="text-xs md:text-sm font-bold text-gray-400">Connect Accounts</label>
+                            <button
+                                onClick={addLink}
+                                className="p-2 bg-purple-500/10 hover:bg-purple-500/20 text-purple-400 rounded-lg transition-all flex items-center gap-2 text-[10px] md:text-xs font-bold"
+                                title="Add new link"
+                            >
+                                <Plus size={14} /> Add Link
+                            </button>
                         </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-10">
-                            <div className="space-y-3">
-                                <label className="text-sm font-bold text-gray-400 ml-1">Profile Name</label>
-                                <input
-                                    type="text"
-                                    placeholder="Enter your name..."
-                                    className="input-field py-4"
-                                    value={profile.name}
-                                    onChange={e => setProfile({ ...profile, name: e.target.value })}
-                                />
-                            </div>
-                            <div className="space-y-3">
-                                <label className="text-sm font-bold text-gray-400 ml-1">One-line Bio</label>
-                                <input
-                                    type="text"
-                                    placeholder="Tell the world about you..."
-                                    className="input-field py-4"
-                                    value={profile.bio}
-                                    onChange={e => setProfile({ ...profile, bio: e.target.value })}
-                                />
-                            </div>
-                        </div>
-
-                        <div className="space-y-6">
-                            <div className="flex justify-between items-center px-1">
-                                <label className="text-sm font-bold text-gray-400">Connect Accounts</label>
-                                <button
-                                    onClick={addLink}
-                                    className="p-2 bg-purple-500/10 hover:bg-purple-500/20 text-purple-400 rounded-lg transition-all flex items-center gap-2 text-xs font-bold"
-                                    title="Add new link"
-                                >
-                                    <Plus size={16} /> Add Link
-                                </button>
-                            </div>
-
-                            <div className="space-y-4">
-                                <AnimatePresence>
-                                    {profile.links.map((link) => (
-                                        <motion.div
-                                            key={link.id}
-                                            initial={{ opacity: 0, y: 10 }}
-                                            animate={{ opacity: 1, y: 0 }}
-                                            exit={{ opacity: 0, scale: 0.9 }}
-                                            className="flex gap-4 items-center bg-white/[0.03] p-4 rounded-2xl border border-white/5"
+                        <div className="space-y-3 md:space-y-4">
+                            <AnimatePresence>
+                                {profile.links.map((link) => (
+                                    <motion.div
+                                        key={link.id}
+                                        initial={{ opacity: 0, y: 10 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        exit={{ opacity: 0, scale: 0.9 }}
+                                        className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center bg-white/[0.03] p-3 md:p-4 rounded-xl md:rounded-2xl border border-white/5"
+                                    >
+                                        <select
+                                            className="bg-black border-none text-sm font-bold rounded-lg md:rounded-xl px-3 py-3 w-full sm:w-40 focus:ring-2 ring-purple-500 transition-all"
+                                            value={link.platform}
+                                            onChange={e => updateLink(link.id, 'platform', e.target.value)}
                                         >
-                                            <select
-                                                className="bg-black border-none text-sm font-bold rounded-xl px-4 py-4 w-40 focus:ring-2 ring-purple-500 transition-all"
-                                                value={link.platform}
-                                                onChange={e => updateLink(link.id, 'platform', e.target.value)}
-                                            >
-                                                {PLATFORMS.map(p => (
-                                                    <option key={p.id} value={p.id}>{p.name}</option>
-                                                ))}
-                                            </select>
+                                            {PLATFORMS.map(p => (
+                                                <option key={p.id} value={p.id}>{p.name}</option>
+                                            ))}
+                                        </select>
+                                        <div className="flex gap-2 flex-1">
                                             <input
                                                 type="text"
                                                 placeholder={PLATFORMS.find(p => p.id === link.platform)?.placeholder}
-                                                className="flex-1 bg-transparent border-none text-sm p-2 focus:ring-0 text-white placeholder:text-gray-600"
+                                                className="flex-1 bg-transparent border-none text-sm p-2 focus:ring-0 text-white placeholder:text-gray-600 min-w-0"
                                                 value={link.url}
                                                 onChange={e => updateLink(link.id, 'url', e.target.value)}
                                             />
                                             <button
                                                 onClick={() => removeLink(link.id)}
-                                                className="p-3 hover:bg-red-500/20 text-red-500/50 hover:text-red-500 transition-all rounded-xl"
+                                                className="p-2 hover:bg-red-500/20 text-red-500/50 hover:text-red-500 transition-all rounded-lg shrink-0"
                                             >
-                                                <Trash2 size={20} />
+                                                <Trash2 size={18} />
                                             </button>
-                                        </motion.div>
-                                    ))}
-                                </AnimatePresence>
-                            </div>
-
-                            <button
-                                onClick={addLink}
-                                className="w-full py-5 border-2 border-dashed border-white/10 rounded-2xl hover:border-purple-500/50 hover:bg-purple-500/5 transition-all flex items-center justify-center gap-3 text-sm font-extrabold text-gray-500 hover:text-purple-400"
-                            >
-                                <Plus size={20} /> Add Another Social Account
-                            </button>
+                                        </div>
+                                    </motion.div>
+                                ))}
+                            </AnimatePresence>
                         </div>
-                    </motion.div>
 
-                    <footer className="flex items-center gap-4 text-xs text-gray-500 px-4">
-                        <ShieldCheck className="text-green-500" size={20} />
-                        <p>Private & Secure: Data is stored inside the QR code itself. No database is used.</p>
-                    </footer>
-                </div>
+                        <button
+                            onClick={addLink}
+                            className="w-full py-4 md:py-5 border-2 border-dashed border-white/10 rounded-2xl hover:border-purple-500/50 hover:bg-purple-500/5 transition-all flex items-center justify-center gap-3 text-sm font-extrabold text-gray-500 hover:text-purple-400"
+                        >
+                            <Plus size={18} /> <span className="hidden sm:inline">Add Another Social Account</span><span className="sm:hidden">Add Account</span>
+                        </button>
+                    </div>
+                </motion.div>
 
-                {/* Live Preview & QR (Right) */}
-                <div className="lg:col-span-5 flex flex-col items-center gap-10">
-
-                    {/* Master QR Card */}
-                    <motion.div
-                        initial={{ opacity: 0, scale: 0.95 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        className="glass-card rounded-[3rem] p-10 w-full flex flex-col items-center border border-white/10 shadow-[0_0_100px_rgba(168,85,247,0.1)]"
-                    >
+                {/* QR Code Section - Centered */}
+                <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.1 }}
+                    className="glass-card rounded-[3rem] p-10 border border-white/10 shadow-[0_0_100px_rgba(168,85,247,0.1)]"
+                >
+                    <div className="flex flex-col items-center">
                         <div className="relative mb-10 group cursor-pointer" onClick={downloadQR}>
                             <div className="absolute -inset-6 bg-gradient-to-tr from-purple-500 to-pink-500 rounded-[3rem] opacity-30 blur-2xl group-hover:opacity-50 transition-all duration-500" />
                             <div className="relative bg-white p-8 rounded-[2.5rem] shadow-2xl transform transition-transform group-hover:scale-[1.02]">
@@ -240,19 +237,19 @@ export default function Creator() {
                                     id="qr-code-svg"
                                     value={generatedUrl || window.location.origin}
                                     size={240}
-                                    level="H"
-                                    includeMargin={false}
+                                    level="M"
+                                    includeMargin={true}
                                 />
                             </div>
                         </div>
 
                         <div className="text-center w-full space-y-6">
                             <div>
-                                <h3 className="text-2xl font-black mb-2 text-white italic tracking-tight">THE MASTER QR</h3>
+                                <h3 className="text-2xl font-black mb-2 text-white italic tracking-tight">YOUR MASTER QR</h3>
                                 <p className="text-gray-500 text-sm font-medium">Scan to open all links at once</p>
                             </div>
 
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 w-full">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full max-w-md mx-auto">
                                 <button
                                     onClick={downloadQR}
                                     className="primary-btn py-4 rounded-2xl flex items-center justify-center gap-2 text-sm"
@@ -267,51 +264,25 @@ export default function Creator() {
                                     {copied ? 'Copied Link' : 'Copy Link'}
                                 </button>
                             </div>
+
+                            {generatedUrl && (
+                                <a
+                                    href={generatedUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="inline-flex items-center gap-2 text-sm font-bold text-purple-400 hover:text-purple-300 transition-colors bg-purple-500/10 px-6 py-3 rounded-full"
+                                >
+                                    <ExternalLink size={16} /> Preview Profile
+                                </a>
+                            )}
                         </div>
-                    </motion.div>
-
-                    {/* Phone Preview Mockup */}
-                    <div className="w-full max-w-[340px]">
-                        <div className="text-center mb-4 flex items-center justify-center gap-2">
-                            <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
-                            <span className="text-[10px] font-black tracking-widest text-gray-500 uppercase">Live Landing Page Preview</span>
-                        </div>
-
-                        <motion.div
-                            className="relative w-full aspect-[9/18.5] bg-zinc-950 rounded-[3.5rem] border-[10px] border-zinc-900 shadow-2xl overflow-hidden"
-                        >
-                            {/* iPhone Notch */}
-                            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-36 h-7 bg-zinc-900 rounded-b-3xl z-20" />
-
-                            {/* Preview Content */}
-                            <div className="absolute inset-0 overflow-y-auto pt-14 px-6 pb-10 space-y-8 no-scrollbar">
-                                <div className="flex flex-col items-center text-center">
-                                    <div className="w-20 h-20 rounded-full bg-gradient-to-tr from-purple-600 to-pink-500 mb-4 flex items-center justify-center text-3xl font-black shadow-lg">
-                                        {profile.name ? profile.name.charAt(0).toUpperCase() : '?'}
-                                    </div>
-                                    <h4 className="font-black text-lg text-white tracking-tight">{profile.name || 'Your Name'}</h4>
-                                    <p className="text-[11px] text-gray-500 leading-relaxed font-medium mt-1">{profile.bio || 'Your bio will appear here after typing'}</p>
-                                </div>
-
-                                <div className="space-y-3">
-                                    {profile.links.filter(l => l.url).map((link, i) => (
-                                        <div key={i} className="w-full bg-white/5 border border-white/10 rounded-xl p-3 flex items-center gap-4 transition-all">
-                                            <div className="w-8 h-8 rounded-lg bg-zinc-800 flex items-center justify-center">
-                                                <Smartphone size={16} className="text-gray-400" />
-                                            </div>
-                                            <span className="text-[11px] font-bold capitalize text-white opacity-80">{link.platform}</span>
-                                        </div>
-                                    ))}
-                                    {profile.links.filter(l => l.url).length === 0 && (
-                                        <div className="text-center py-8 opacity-20 border-2 border-dashed border-white/10 rounded-2xl">
-                                            <p className="text-[10px] font-bold text-gray-400">Waiting for links...</p>
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-                        </motion.div>
                     </div>
+                </motion.div>
 
+                {/* Security Note - Centered */}
+                <div className="glass-card rounded-2xl p-6 flex items-center justify-center gap-4 text-sm text-gray-400 max-w-xl mx-auto">
+                    <ShieldCheck className="text-green-500 flex-shrink-0" size={24} />
+                    <p className="text-center">Your data is securely encoded directly into the QR code. We don't store your personal information on our servers.</p>
                 </div>
             </div>
         </div>
