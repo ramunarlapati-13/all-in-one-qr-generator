@@ -197,7 +197,7 @@ export default function Profile() {
                                         className="flex items-center p-1 rounded-2xl group hover:scale-[1.03] active:scale-95 transition-all duration-300"
                                         style={{ background: linkColor.includes('gradient') ? linkColor : 'rgba(255,255,255,0.03)' }}
                                     >
-                                        <div className="flex-1 flex items-center bg-[#0a0a0f] bg-opacity-95 rounded-xl p-4 backdrop-blur-md group-hover:bg-opacity-80 transition-all border border-white/5">
+                                        <div className="flex-1 flex items-center bg-[#0a0a0f] bg-opacity-95 rounded-xl p-4 md:p-3 backdrop-blur-md group-hover:bg-opacity-80 transition-all border border-white/5 min-h-[64px] md:min-h-0">
                                             <div
                                                 className="w-10 h-10 rounded-lg flex items-center justify-center mr-4 shadow-lg text-white"
                                                 style={{ background: linkColor }}
@@ -234,7 +234,7 @@ export default function Profile() {
                     </div>
 
                     <div className="pt-6 border-t border-white/5 flex flex-col items-center gap-4">
-                        <div className="flex items-center gap-2 text-[10px] font-black tracking-widest text-gray-600 uppercase">
+                        <div className="flex items-center gap-2 text-[10px] font-black tracking-widest text-gray-500 uppercase">
                             <Zap size={10} fill="currentColor" className="text-purple-500" /> Powered by LinkHub
                         </div>
                         <Link to="/" className="text-xs font-bold text-purple-400 hover:text-purple-300 transition-colors bg-purple-500/10 px-4 py-2 rounded-full">

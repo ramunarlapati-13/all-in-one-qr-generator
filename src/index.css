@@ -99,6 +99,10 @@ button {
   outline: none;
 }
 
+.input-field::placeholder {
+  color: rgba(255, 255, 255, 0.4);
+}
+
 .input-field:focus {
   border-color: #a855f7;
   background: rgba(255, 255, 255, 0.08);

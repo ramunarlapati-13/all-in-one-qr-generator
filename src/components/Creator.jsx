@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
-import { Plus, Trash2, Download, Zap, MousePointer2, Copy, Check, ShieldCheck } from 'lucide-react';
+import { Plus, Trash2, Download, Zap, MousePointer2, Copy, Check, ShieldCheck, ExternalLink } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const PLATFORMS = [
@@ -197,7 +197,7 @@ export default function Creator() {
                                             <input
                                                 type="text"
                                                 placeholder={PLATFORMS.find(p => p.id === link.platform)?.placeholder}
-                                                className="flex-1 bg-transparent border-none text-sm p-2 focus:ring-0 text-white placeholder:text-gray-600 min-w-0"
+                                                className="flex-1 bg-transparent border-none text-sm p-2 focus:ring-0 text-white placeholder:text-gray-400 min-w-0"
                                                 value={link.url}
                                                 onChange={e => updateLink(link.id, 'url', e.target.value)}
                                             />
@@ -215,7 +215,7 @@ export default function Creator() {
 
                         <button
                             onClick={addLink}
-                            className="w-full py-4 md:py-5 border-2 border-dashed border-white/10 rounded-2xl hover:border-purple-500/50 hover:bg-purple-500/5 transition-all flex items-center justify-center gap-3 text-sm font-extrabold text-gray-500 hover:text-purple-400"
+                            className="w-full py-4 md:py-5 border-2 border-dashed border-white/20 rounded-2xl hover:border-purple-500 hover:bg-purple-500/10 transition-all flex items-center justify-center gap-3 text-sm font-extrabold text-gray-300 hover:text-white"
                         >
                             <Plus size={18} /> <span className="hidden sm:inline">Add Another Social Account</span><span className="sm:hidden">Add Account</span>
                         </button>
