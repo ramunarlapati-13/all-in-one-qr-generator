@@ -1,73 +1,45 @@
-# React + TypeScript + Vite
+# AIO REXPO QR | All in one QR Generator
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A professional, high-performance web application to create, customize, and share all-in-one QR codes and bio-links.
 
-Currently, two official plugins are available:
+## 🚀 Recent Improvements & Fixes
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+We've recently upgraded the application to ensure better performance and a more stable experience for our users.
 
-## React Compiler
+### ⚡ Performance & Optimization
+- **Code Splitting & Lazy Loading**: Significantly reduced initial bundle size by implementing React Lazy and Suspense. Only the necessary code for a page is loaded when visited.
+- **Improved UX**: Added premium loading fallbacks and localized spinners for a smoother navigation experience.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+### 🛠️ Key Fixes & Features
+- **Persistent Cloud Profiles**: Profiles are now stored in **Firebase Firestore**. This eliminates "URL too long" errors and allows for reliable sharing via clean, short links (`/p?id=USER_ID`).
+- **Stable Auto-Save**: Implemented an "initial load lock" to prevent default data from overwriting existing cloud profiles during login/logout transitions.
+- **SPA Routing Fix**: Added `vercel.json` with rewrite rules to prevent 404 errors when direct-linking to sub-pages like `/p`.
+- **Bio-Link QR Integration**: Personal profiles now feature a built-in, theme-matched QR code for easy scanning and sharing on any device.
 
-## Expanding the ESLint configuration
+## 🧰 Tech Stack
+- **Frontend**: React 18, TypeScript, Vite
+- **Styling**: Tailwind CSS, Framer Motion
+- **Icons**: Lucide React, Phosphor Icons
+- **Backend / DB**: Firebase (Auth, Firestore, Realtime Database)
+- **Deployment**: Vercel
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+## 🏗️ Getting Started
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+### Prerequisites
+- Node.js (v18+)
+- Firebase Account & Project setup
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+### Installation
+1. Clone the repository
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
+3. Setup `.env` (ensure Firebase config is in `src/firebase.ts`)
+4. Run locally:
+   ```bash
+   npm run dev
+   ```
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
-
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
-
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+## 📄 License
+Developed by **Rexplore Technologies** © 2026
