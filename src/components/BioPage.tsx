@@ -82,8 +82,20 @@ const BioPage: React.FC<BioPageProps> = ({ name, role, avatarUrl, links }) => {
                     </div>
                 </div>
 
+                <div className="px-4 py-8 mt-4 border-t border-white/5 flex flex-col items-center gap-4">
+                    <div className="flex flex-col items-center gap-1">
+                        <p className="text-[#c092c9] text-[10px] font-medium tracking-wider uppercase opacity-50">
+                            Developed by Rexplore Technologies © 2026
+                        </p>
+                    </div>
+                    <a
+                        href="/?ref=create"
+                        className="flex items-center gap-2 bg-[#ce2bee]/10 hover:bg-[#ce2bee] text-[#ce2bee] hover:text-white px-4 py-2 rounded-full border border-[#ce2bee]/30 transition-all font-bold text-[11px] uppercase tracking-widest no-underline"
+                    >
+                        Want to create your rexpo?
+                    </a>
+                </div>
             </div>
-
 
             <style>{`
         .custom-scrollbar::-webkit-scrollbar {

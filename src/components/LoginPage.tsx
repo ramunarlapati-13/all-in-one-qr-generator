@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { auth } from '../firebase';
-import { signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged } from 'firebase/auth';
+import { signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, sendPasswordResetEmail } from 'firebase/auth';
 import type { User } from 'firebase/auth';
 import { Eye, EyeOff, CheckCircle } from 'lucide-react';
 
@@ -10,9 +10,10 @@ const LoginPage: React.FC = () => {
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
-    const [mode, setMode] = useState<'signin' | 'signup'>('signin');
+    const [mode, setMode] = useState<'signin' | 'signup' | 'forgot'>('signin');
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
+    const [message, setMessage] = useState('');
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
@@ -23,6 +24,7 @@ const LoginPage: React.FC = () => {
 
     const handleAuth = async () => {
         setError('');
+        setMessage('');
         setLoading(true);
 
         if (mode === 'signup' && password !== confirmPassword) {
@@ -34,13 +36,22 @@ const LoginPage: React.FC = () => {
         try {
             if (mode === 'signin') {
                 await signInWithEmailAndPassword(auth, email, password);
-                alert('Signed in successfully!');
-            } else {
+            } else if (mode === 'signup') {
                 await createUserWithEmailAndPassword(auth, email, password);
                 alert('Account created successfully!');
+            } else if (mode === 'forgot') {
+                if (!email) {
+                    setError('Please enter your email address first.');
+                    setLoading(false);
+                    return;
+                }
+                await sendPasswordResetEmail(auth, email);
+                setMessage('Password reset email sent! Check your inbox.');
             }
         } catch (err: any) {
-            if (err.code === 'auth/email-already-in-use') {
+            if (err.code === 'auth/invalid-credential' || err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password') {
+                setError('Invalid credentials, please check Email or Password');
+            } else if (err.code === 'auth/email-already-in-use') {
                 setError('This email is already registered. Please sign in instead.');
             } else {
                 setError(err.message);
@@ -52,14 +63,10 @@ const LoginPage: React.FC = () => {
 
     return (
         <div
-            className="relative flex h-full min-h-[600px] w-full flex-col bg-[#171118] dark justify-between group/design-root overflow-x-hidden shadow-2xl overflow-hidden rounded-[32px] border border-white/10"
+            className="relative flex h-full w-full flex-col bg-transparent dark justify-between group/design-root overflow-x-hidden"
             style={{ fontFamily: '"Plus Jakarta Sans", "Noto Sans", sans-serif' }}
         >
             <div className="flex-1 flex flex-col">
-                <div className="flex items-center bg-[#171118] p-4 pb-2 justify-between border-b border-white/5">
-                    <h2 className="text-white text-lg font-bold leading-tight tracking-[-0.015em] flex-1 text-center pl-12">Settings</h2>
-                </div>
-
                 <div className="flex-1 flex flex-col justify-center max-w-[480px] w-full mx-auto">
                     {user ? (
                         <div className="flex flex-col items-center gap-6 p-8">
@@ -81,7 +88,7 @@ const LoginPage: React.FC = () => {
                     ) : (
                         <>
                             <h3 className="text-white text-2xl font-bold leading-tight tracking-[-0.015em] px-4 pb-4 pt-4 text-center">
-                                {mode === 'signin' ? 'Welcome Back' : 'Create Account'}
+                                {mode === 'signin' ? 'Welcome Back' : mode === 'signup' ? 'Create Account' : 'Reset Password'}
                             </h3>
                             <div className="flex w-full flex-wrap items-end gap-4 px-4 py-3">
                                 <label className="flex flex-col min-w-40 flex-1">
@@ -93,50 +100,79 @@ const LoginPage: React.FC = () => {
                                     />
                                 </label>
                             </div>
-                            <div className="flex w-full flex-wrap items-end gap-4 px-4 py-3 relative">
-                                <label className="flex flex-col min-w-40 flex-1">
-                                    <input
-                                        placeholder="Password"
-                                        type={showPassword ? 'text' : 'password'}
-                                        className="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-xl text-white focus:outline-0 focus:ring-2 focus:ring-[#ce2bee]/50 border-none bg-[#362839] focus:border-none h-14 placeholder:text-[#b49db9] p-4 pr-12 text-base font-normal leading-normal transition-all"
-                                        value={password}
-                                        onChange={(e) => setPassword(e.target.value)}
-                                    />
-                                </label>
-                                <button
-                                    onClick={() => setShowPassword(!showPassword)}
-                                    className="absolute right-8 top-1/2 -translate-y-1/2 text-[#b49db9] hover:text-white transition-colors"
-                                >
-                                    {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
-                                </button>
-                            </div>
-                            {mode === 'signup' && (
-                                <div className="flex w-full flex-wrap items-end gap-4 px-4 py-3">
-                                    <label className="flex flex-col min-w-40 flex-1">
-                                        <input
-                                            placeholder="Confirm Password"
-                                            type={showPassword ? 'text' : 'password'}
-                                            className="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-xl text-white focus:outline-0 focus:ring-2 focus:ring-[#ce2bee]/50 border-none bg-[#362839] focus:border-none h-14 placeholder:text-[#b49db9] p-4 text-base font-normal leading-normal transition-all"
-                                            value={confirmPassword}
-                                            onChange={(e) => setConfirmPassword(e.target.value)}
-                                        />
-                                    </label>
+                            {mode !== 'forgot' && (
+                                <>
+                                    <div className="flex w-full flex-wrap items-end gap-4 px-4 py-3 relative">
+                                        <label className="flex flex-col min-w-40 flex-1">
+                                            <input
+                                                placeholder="Password"
+                                                type={showPassword ? 'text' : 'password'}
+                                                className="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-xl text-white focus:outline-0 focus:ring-2 focus:ring-[#ce2bee]/50 border-none bg-[#362839] focus:border-none h-14 placeholder:text-[#b49db9] p-4 pr-12 text-base font-normal leading-normal transition-all"
+                                                value={password}
+                                                onChange={(e) => setPassword(e.target.value)}
+                                            />
+                                        </label>
+                                        <button
+                                            onClick={() => setShowPassword(!showPassword)}
+                                            className="absolute right-8 top-1/2 -translate-y-1/2 text-[#b49db9] hover:text-white transition-colors"
+                                        >
+                                            {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                                        </button>
+                                    </div>
+                                    {mode === 'signup' && (
+                                        <div className="flex w-full flex-wrap items-end gap-4 px-4 py-3">
+                                            <label className="flex flex-col min-w-40 flex-1">
+                                                <input
+                                                    placeholder="Confirm Password"
+                                                    type={showPassword ? 'text' : 'password'}
+                                                    className="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-xl text-white focus:outline-0 focus:ring-2 focus:ring-[#ce2bee]/50 border-none bg-[#362839] focus:border-none h-14 placeholder:text-[#b49db9] p-4 text-base font-normal leading-normal transition-all"
+                                                    value={confirmPassword}
+                                                    onChange={(e) => setConfirmPassword(e.target.value)}
+                                                />
+                                            </label>
+                                        </div>
+                                    )}
+                                    {mode === 'signin' && (
+                                        <div className="flex justify-end px-4 -mt-2">
+                                            <button
+                                                onClick={() => setMode('forgot')}
+                                                className="text-[#b49db9] hover:text-[#ce2bee] text-xs font-semibold"
+                                            >
+                                                Forgot Password?
+                                            </button>
+                                        </div>
+                                    )}
+                                </>
+                            )}
+
+                            {error && <p className="text-red-400 text-sm px-4 text-center mt-2">{error}</p>}
+                            {message && (
+                                <div className="flex flex-col items-center gap-2 px-4 mt-2">
+                                    <p className="text-green-400 text-sm text-center">{message}</p>
+                                    <button
+                                        onClick={() => setMode('signin')}
+                                        className="text-[#ce2bee] text-xs font-bold uppercase tracking-widest hover:underline mt-1"
+                                    >
+                                        Back to Login
+                                    </button>
                                 </div>
                             )}
-                            {error && <p className="text-red-400 text-sm px-4 text-center">{error}</p>}
+
                             <div className="flex px-4 py-3 mt-2">
                                 <button
                                     onClick={handleAuth}
                                     disabled={loading}
                                     className="flex min-w-[84px] w-full cursor-pointer items-center justify-center overflow-hidden rounded-xl h-12 bg-[#ce2bee] hover:bg-[#b024cc] transition-all hover:scale-[1.02] active:scale-95 text-white text-base font-bold leading-normal tracking-[0.015em] shadow-lg shadow-[#ce2bee]/20 disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
-                                    <span className="truncate">{loading ? 'Processing...' : (mode === 'signin' ? 'Sign In' : 'Sign Up')}</span>
+                                    <span className="truncate">
+                                        {loading ? 'Processing...' : (mode === 'signin' ? 'Sign In' : mode === 'signup' ? 'Sign Up' : 'Send Reset Link')}
+                                    </span>
                                 </button>
                             </div>
                             <div className="flex flex-col gap-2 mt-4 text-center px-4">
                                 <div className="flex justify-center gap-1 text-sm">
                                     <p className="text-[#b49db9] font-normal leading-normal">
-                                        {mode === 'signin' ? "Don't have an account?" : "Already have an account?"}
+                                        {mode === 'signin' ? "Don't have an account?" : mode === 'signup' ? "Already have an account?" : "Remembered it?"}
                                     </p>
                                     <button
                                         onClick={() => setMode(mode === 'signin' ? 'signup' : 'signin')}

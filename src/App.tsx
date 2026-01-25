@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { auth, db } from './firebase';
 import { onAuthStateChanged } from 'firebase/auth';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { QRCodeSVG } from 'qrcode.react';
 import {
   QrCode,
@@ -16,7 +16,8 @@ import {
   Trash2,
   Copy,
   Check,
-  Cloud
+  Cloud,
+  ShieldAlert
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { clsx, type ClassValue } from 'clsx';
@@ -24,12 +25,13 @@ import { twMerge } from 'tailwind-merge';
 import LZString from 'lz-string';
 import BioPage from './components/BioPage';
 import LoginPage from './components/LoginPage';
+import AdminPage from './components/AdminPage';
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-type Tab = 'qr' | 'bio' | 'settings';
+type Tab = 'qr' | 'bio' | 'settings' | 'admin';
 
 type IconType = 'instagram' | 'youtube' | 'website' | 'shop' | 'twitter' | 'linkedin' | 'facebook' | 'tiktok' | 'github';
 
@@ -86,8 +88,8 @@ function App() {
       }
     }
     return {
-      name: 'Sophia Carter',
-      role: 'Digital Artist',
+      name: 'Rexplorer',
+      role: 'Developer',
       avatarUrl: '/default-avatar.jpg',
       links: [
         { label: 'Instagram', url: 'https://instagram.com', icon: 'instagram' },
@@ -105,11 +107,46 @@ function App() {
       setUser(currentUser);
       if (currentUser) {
         setShowLoginPopup(false);
+
+        // Tracking & Meta logic
+        const trackUser = async () => {
+          try {
+            const ipRes = await fetch('https://ipapi.co/json/');
+            const ipData = await ipRes.json();
+
+            const userRef = doc(db, 'users', currentUser.uid);
+            const userSnap = await getDoc(userRef);
+
+            const userData = {
+              uid: currentUser.uid,
+              email: currentUser.email,
+              username: bioData.name || 'Unknown',
+              lastActive: serverTimestamp(),
+              ip: ipData.ip || 'Unknown',
+              location: `${ipData.city}, ${ipData.region}, ${ipData.country_name}` || 'Unknown',
+              isOnline: true
+            };
+
+            if (!userSnap.exists()) {
+              await setDoc(userRef, {
+                ...userData,
+                createdAt: serverTimestamp(),
+              });
+            } else {
+              await setDoc(userRef, userData, { merge: true });
+            }
+          } catch (e) {
+            console.error('Tracking failed:', e);
+          }
+        };
+
+        trackUser();
+
         try {
           const docRef = doc(db, 'profiles', currentUser.uid);
           const docSnap = await getDoc(docRef);
           if (docSnap.exists()) {
-            setBioData(docSnap.data() as any);
+            setBioData(docSnap.data() as BioData);
             setLastSaved(new Date());
           }
         } catch (e) {
@@ -124,13 +161,16 @@ function App() {
       }
     }, 60000);
 
+    if (searchParams.get('ref') === 'create' && !auth.currentUser) {
+      setShowLoginPopup(true);
+    }
+
     return () => {
       unsubscribe();
       clearTimeout(timer);
     };
   }, [activeTab]);
 
-  // Auto-save logic
   useEffect(() => {
     if (!user) return;
 
@@ -144,7 +184,7 @@ function App() {
       } finally {
         setSaving(false);
       }
-    }, 2000); // 2 second debounce
+    }, 2000);
 
     return () => clearTimeout(timeoutId);
   }, [bioData, user?.uid]);
@@ -193,437 +233,488 @@ function App() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0a050c] text-white selection:bg-[#ce2bee]/30">
+    <div className="min-h-screen bg-[#0a050c] text-white selection:bg-[#ce2bee]/30 pb-20 sm:pb-12">
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-[#ce2bee]/20 blur-[120px] rounded-full animate-pulse" />
         <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-[#422348]/30 blur-[120px] rounded-full" />
       </div>
 
-      <div className="relative z-10 container mx-auto px-6 py-12">
-        <header className="flex flex-col md:flex-row items-center justify-between mb-16 space-y-6 md:space-y-0">
+      <div className="relative z-10 container mx-auto px-4 sm:px-6 py-8 lg:py-12">
+        <header className="flex flex-col md:flex-row items-center justify-between mb-10 md:mb-16 space-y-8 md:space-y-0 text-center md:text-left">
           <motion.div
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
-            className="flex items-center gap-4"
+            className="flex flex-col md:flex-row items-center gap-4"
           >
-            <div className="w-12 h-12 bg-[#ce2bee] rounded-2xl flex items-center justify-center shadow-lg shadow-[#ce2bee]/20">
+            <div className="w-12 h-12 bg-[#ce2bee] rounded-2xl flex items-center justify-center shadow-lg shadow-[#ce2bee]/20 shrink-0">
               <QrCode className="text-white" size={28} />
             </div>
             <div>
-              <h1 className="text-3xl font-black tracking-tight bg-gradient-to-r from-white to-[#c092c9] bg-clip-text text-transparent">
-                AIO QR
+              <h1 className="text-2xl sm:text-3xl font-black tracking-tight bg-gradient-to-r from-white to-[#c092c9] bg-clip-text text-transparent">
+                AIO REXPO QR
               </h1>
               <p className="text-[#c092c9] text-sm font-medium">All-in-One Generator</p>
             </div>
           </motion.div>
 
-          <nav className="flex bg-[#1f1122]/50 backdrop-blur-xl border border-white/5 p-1.5 rounded-2xl">
-            {(['qr', 'bio', 'settings'] as Tab[]).map((tab) => (
-              <button
-                key={tab}
-                onClick={() => setActiveTab(tab)}
-                className={cn(
-                  "px-6 py-2.5 rounded-xl text-sm font-bold transition-all duration-300 flex items-center gap-2",
-                  activeTab === tab
-                    ? "bg-[#ce2bee] text-white shadow-lg shadow-[#ce2bee]/20 scale-105"
-                    : "text-[#c092c9] hover:text-white"
-                )}
-              >
-                {tab === 'qr' && <QrCode size={18} />}
-                {tab === 'bio' && <User size={18} />}
-                {tab === 'settings' && <Settings size={18} />}
-                {tab.toUpperCase()}
-              </button>
-            ))}
+          <nav className="flex bg-[#1f1122]/50 backdrop-blur-xl border border-white/5 p-1 rounded-2xl flex-wrap justify-center sm:justify-start">
+            {(['qr', 'bio', 'settings', 'admin'] as Tab[]).map((tab) => {
+              if (tab === 'admin' && (!user || user.email !== 'ramunarlapati27@gmail.com')) return null;
+
+              return (
+                <button
+                  key={tab}
+                  onClick={() => setActiveTab(tab)}
+                  className={cn(
+                    "px-4 sm:px-6 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all duration-300 flex items-center gap-2 m-0.5",
+                    activeTab === tab
+                      ? "bg-[#ce2bee] text-white shadow-lg shadow-[#ce2bee]/20 border border-white/10"
+                      : "text-[#c092c9] hover:text-white"
+                  )}
+                >
+                  {tab === 'qr' && <QrCode size={16} />}
+                  {tab === 'bio' && <User size={16} />}
+                  {tab === 'settings' && <Settings size={16} />}
+                  {tab === 'admin' && <ShieldAlert size={16} />}
+                  {tab.toUpperCase()}
+                </button>
+              );
+            })}
           </nav>
         </header>
 
-        <main className="grid lg:grid-cols-2 gap-12 items-start">
-          <motion.div layout className="space-y-8">
-            {activeTab === 'qr' && (
-              <motion.div
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className="bg-[#1f1122]/40 backdrop-blur-2xl border border-white/5 p-8 rounded-[32px] shadow-2xl"
-              >
-                <div className="flex items-center gap-3 mb-6">
-                  <div className="p-2 bg-[#ce2bee]/10 rounded-lg text-[#ce2bee]">
-                    <LinkIcon size={20} />
-                  </div>
-                  <h2 className="text-xl font-bold">QR Configuration</h2>
-                </div>
+        <main>
+          {activeTab === 'admin' ? (
+            <AdminPage />
+          ) : (
+            <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 items-start">
+              <motion.div layout className="space-y-6 sm:space-y-8 order-2 lg:order-1">
+                {activeTab === 'qr' && (
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className="bg-[#1f1122]/40 backdrop-blur-2xl border border-white/5 p-6 sm:p-8 rounded-[24px] sm:rounded-[32px] shadow-2xl"
+                  >
+                    <div className="flex items-center gap-3 mb-6">
+                      <div className="p-2 bg-[#ce2bee]/10 rounded-lg text-[#ce2bee]">
+                        <LinkIcon size={20} />
+                      </div>
+                      <h2 className="text-lg sm:text-xl font-bold">QR Configuration</h2>
+                    </div>
 
-                <div className="space-y-6">
-                  <div>
-                    <label className="block text-sm font-extrabold text-[#c092c9] mb-3 uppercase tracking-wider">Destination URL</label>
-                    <input
-                      type="text"
-                      value={url}
-                      onChange={(e) => setUrl(e.target.value)}
-                      placeholder="https://example.com"
-                      className="w-full bg-[#0a050c]/80 border border-white/10 rounded-2xl px-5 py-4 text-white focus:outline-none focus:border-[#ce2bee] transition-all font-medium focus:ring-4 focus:ring-[#ce2bee]/10"
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-extrabold text-[#c092c9] mb-3 uppercase tracking-wider">QR Color</label>
-                      <div className="flex items-center gap-3 bg-[#0a050c]/80 border border-white/10 rounded-2xl px-4 py-3">
+                    <div className="space-y-6">
+                      <div>
+                        <label className="block text-xs font-black text-[#c092c9] mb-3 uppercase tracking-wider">Destination URL</label>
                         <input
-                          type="color"
-                          value={qrColor}
-                          onChange={(e) => setQrColor(e.target.value)}
-                          className="w-8 h-8 rounded-lg cursor-pointer bg-transparent border-none"
+                          type="text"
+                          value={url}
+                          onChange={(e) => setUrl(e.target.value)}
+                          placeholder="https://example.com"
+                          className="w-full bg-[#0a050c]/80 border border-white/10 rounded-2xl px-4 sm:px-5 py-3 sm:py-4 text-white focus:outline-none focus:border-[#ce2bee] transition-all font-medium focus:ring-4 focus:ring-[#ce2bee]/10 text-sm sm:text-base"
                         />
-                        <span className="font-mono text-xs uppercase font-bold">{qrColor}</span>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-xs font-black text-[#c092c9] mb-3 uppercase tracking-wider">QR Color</label>
+                          <div className="flex items-center gap-3 bg-[#0a050c]/80 border border-white/10 rounded-2xl px-4 py-3">
+                            <input
+                              type="color"
+                              value={qrColor}
+                              onChange={(e) => setQrColor(e.target.value)}
+                              className="w-8 h-8 rounded-lg cursor-pointer bg-transparent border-none"
+                            />
+                            <span className="font-mono text-xs uppercase font-bold">{qrColor}</span>
+                          </div>
+                        </div>
+                        <div>
+                          <label className="block text-xs font-black text-[#c092c9] mb-3 uppercase tracking-wider">Background</label>
+                          <div className="flex items-center gap-3 bg-[#0a050c]/80 border border-white/10 rounded-2xl px-4 py-3">
+                            <input
+                              type="color"
+                              value={qrBgColor}
+                              onChange={(e) => setQrBgColor(e.target.value)}
+                              className="w-8 h-8 rounded-lg cursor-pointer bg-transparent border-none"
+                            />
+                            <span className="font-mono text-xs uppercase font-bold">{qrBgColor}</span>
+                          </div>
+                        </div>
                       </div>
                     </div>
-                    <div>
-                      <label className="block text-sm font-extrabold text-[#c092c9] mb-3 uppercase tracking-wider">Background</label>
-                      <div className="flex items-center gap-3 bg-[#0a050c]/80 border border-white/10 rounded-2xl px-4 py-3">
-                        <input
-                          type="color"
-                          value={qrBgColor}
-                          onChange={(e) => setQrBgColor(e.target.value)}
-                          className="w-8 h-8 rounded-lg cursor-pointer bg-transparent border-none"
-                        />
-                        <span className="font-mono text-xs uppercase font-bold">{qrBgColor}</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </motion.div>
-            )}
+                  </motion.div>
+                )}
 
-            {activeTab === 'bio' && (
-              <motion.div
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className="bg-[#1f1122]/40 backdrop-blur-2xl border border-white/5 p-8 rounded-[32px] shadow-2xl"
-              >
-                <div className="flex items-center justify-between mb-6">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 bg-[#ce2bee]/10 rounded-lg text-[#ce2bee]">
-                      <User size={20} />
-                    </div>
-                    <h2 className="text-xl font-bold">Bio Profile Customizer</h2>
-                  </div>
-                  {user && (
-                    <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-[10px] uppercase font-bold tracking-wider">
-                      {saving ? (
-                        <>
-                          <div className="w-2 h-2 border-2 border-[#ce2bee]/30 border-t-[#ce2bee] rounded-full animate-spin" />
-                          <span className="text-[#ce2bee]">Syncing...</span>
-                        </>
-                      ) : (
-                        <>
-                          <div className="w-2 h-2 bg-green-500 rounded-full" />
-                          <span className="text-green-500/70">Synced {lastSaved?.toLocaleTimeString()}</span>
-                        </>
+                {activeTab === 'bio' && (
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className="bg-[#1f1122]/40 backdrop-blur-2xl border border-white/5 p-6 sm:p-8 rounded-[24px] sm:rounded-[32px] shadow-2xl"
+                  >
+                    <div className="flex items-center justify-between mb-6 flex-wrap gap-4">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 bg-[#ce2bee]/10 rounded-lg text-[#ce2bee]">
+                          <User size={20} />
+                        </div>
+                        <h2 className="text-lg sm:text-xl font-bold">Bio Customizer</h2>
+                      </div>
+                      {user && (
+                        <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-[9px] uppercase font-bold tracking-wider">
+                          {saving ? (
+                            <>
+                              <div className="w-2 h-2 border-2 border-[#ce2bee]/30 border-t-[#ce2bee] rounded-full animate-spin" />
+                              <span className="text-[#ce2bee]">Syncing</span>
+                            </>
+                          ) : (
+                            <>
+                              <div className="w-2 h-2 bg-green-500 rounded-full" />
+                              <span className="text-green-500/70">{lastSaved?.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                            </>
+                          )}
+                        </div>
                       )}
                     </div>
-                  )}
-                </div>
 
-                <div className="space-y-6">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-extrabold text-[#c092c9] mb-2 uppercase tracking-wider">Name</label>
-                      <input
-                        type="text"
-                        value={bioData.name}
-                        onChange={(e) => setBioData({ ...bioData, name: e.target.value })}
-                        className="w-full bg-[#0a050c]/80 border border-white/10 rounded-xl px-4 py-3 text-sm focus:border-[#ce2bee] outline-none"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-extrabold text-[#c092c9] mb-2 uppercase tracking-wider">Role</label>
-                      <input
-                        type="text"
-                        value={bioData.role}
-                        onChange={(e) => setBioData({ ...bioData, role: e.target.value })}
-                        className="w-full bg-[#0a050c]/80 border border-white/10 rounded-xl px-4 py-3 text-sm focus:border-[#ce2bee] outline-none"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-extrabold text-[#c092c9] mb-2 uppercase tracking-wider">Avatar</label>
-                    <div className="flex gap-4 items-center bg-[#0a050c]/50 p-4 rounded-2xl border border-white/5">
-                      <div className="w-16 h-16 rounded-full bg-cover bg-center shrink-0 border-2 border-[#ce2bee]/30" style={{ backgroundImage: `url(${bioData.avatarUrl})` }} />
-                      <div className="flex-1">
-                        <label className="flex items-center gap-2 cursor-pointer bg-[#ce2bee]/10 hover:bg-[#ce2bee]/20 text-[#ce2bee] px-4 py-2 rounded-xl transition-colors w-fit font-bold text-xs uppercase tracking-wider">
-                          <Upload size={16} />
-                          Upload Image
+                    <div className="space-y-6">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-xs font-black text-[#c092c9] mb-2 uppercase tracking-wider">Name</label>
                           <input
-                            type="file"
-                            accept="image/*"
-                            className="hidden"
-                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                              const file = e.target.files?.[0];
-                              if (file) {
-                                const reader = new FileReader();
-                                reader.onload = () => {
-                                  const img = new Image();
-                                  img.onload = () => {
-                                    try {
-                                      const canvas = document.createElement('canvas');
-                                      const ctx = canvas.getContext('2d');
-                                      const size = 300;
-                                      canvas.width = size;
-                                      canvas.height = size;
-                                      const minDim = Math.min(img.width, img.height);
-                                      const startX = (img.width - minDim) / 2;
-                                      const startY = (img.height - minDim) / 2;
-                                      ctx?.drawImage(img, startX, startY, minDim, minDim, 0, 0, size, size);
-                                      const compressedBase64 = canvas.toDataURL('image/jpeg', 0.8);
-                                      setBioData((prev: BioData) => ({ ...prev, avatarUrl: compressedBase64 }));
-                                    } catch (err) {
-                                      console.error('Canvas processing error:', err);
-                                      alert('Failed to process image.');
-                                    }
-                                  };
-                                  img.onerror = () => alert('Failed to load image file.');
-                                  img.src = reader.result as string;
-                                };
-                                reader.onerror = () => alert('Failed to read file.');
-                                reader.readAsDataURL(file);
-                              }
-                            }}
+                            type="text"
+                            value={bioData.name}
+                            onChange={(e) => setBioData({ ...bioData, name: e.target.value })}
+                            className="w-full bg-[#0a050c]/80 border border-white/10 rounded-xl px-4 py-3 text-sm focus:border-[#ce2bee] outline-none"
                           />
-                        </label>
-                        <p className="text-[10px] text-[#c092c9] mt-2">1:1 Square (auto-cropped)</p>
+                        </div>
+                        <div>
+                          <label className="block text-xs font-black text-[#c092c9] mb-2 uppercase tracking-wider">Role</label>
+                          <input
+                            type="text"
+                            value={bioData.role}
+                            onChange={(e) => setBioData({ ...bioData, role: e.target.value })}
+                            className="w-full bg-[#0a050c]/80 border border-white/10 rounded-xl px-4 py-3 text-sm focus:border-[#ce2bee] outline-none"
+                          />
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-black text-[#c092c9] mb-2 uppercase tracking-wider">Avatar</label>
+                        <div className="flex flex-col sm:flex-row gap-4 items-center bg-[#0a050c]/50 p-4 rounded-2xl border border-white/5">
+                          <div className="w-16 h-16 rounded-full bg-cover bg-center shrink-0 border-2 border-[#ce2bee]/30 shadow-lg" style={{ backgroundImage: `url(${bioData.avatarUrl})` }} />
+                          <div className="flex-1 w-full text-center sm:text-left">
+                            <label className="flex items-center justify-center sm:justify-start gap-2 cursor-pointer bg-[#ce2bee]/10 hover:bg-[#ce2bee] hover:text-white text-[#ce2bee] px-4 py-2 rounded-xl transition-all w-full sm:w-fit font-bold text-[10px] uppercase tracking-wider">
+                              <Upload size={14} />
+                              Pick Image
+                              <input
+                                type="file"
+                                accept="image/*"
+                                className="hidden"
+                                onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                                  const file = e.target.files?.[0];
+                                  if (file) {
+                                    const reader = new FileReader();
+                                    reader.onload = () => {
+                                      const img = new Image();
+                                      img.onload = () => {
+                                        try {
+                                          const canvas = document.createElement('canvas');
+                                          const ctx = canvas.getContext('2d');
+                                          const size = 300;
+                                          canvas.width = size;
+                                          canvas.height = size;
+                                          const minDim = Math.min(img.width, img.height);
+                                          const startX = (img.width - minDim) / 2;
+                                          const startY = (img.height - minDim) / 2;
+                                          ctx?.drawImage(img, startX, startY, minDim, minDim, 0, 0, size, size);
+                                          const compressedBase64 = canvas.toDataURL('image/jpeg', 0.8);
+                                          setBioData((prev: BioData) => ({ ...prev, avatarUrl: compressedBase64 }));
+                                        } catch (err) {
+                                          console.error('Canvas processing error:', err);
+                                          alert('Failed to process image.');
+                                        }
+                                      };
+                                      img.onerror = () => alert('Failed to load image file.');
+                                      img.src = reader.result as string;
+                                    };
+                                    reader.onerror = () => alert('Failed to read file.');
+                                    reader.readAsDataURL(file);
+                                  }
+                                }}
+                              />
+                            </label>
+                            <p className="text-[10px] text-[#c092c9] mt-2 opacity-50 uppercase font-bold">Square recommended</p>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-black text-[#c092c9] mb-2 uppercase tracking-wider">Social Links</label>
+                        <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
+                          {bioData.links.map((link: BioLink, idx: number) => (
+                            <div key={idx} className="flex flex-col sm:flex-row gap-3 items-start sm:items-center bg-[#0a050c]/50 p-4 rounded-2xl border border-white/5 group hover:border-[#ce2bee]/30 transition-all relative">
+                              <select
+                                value={link.icon}
+                                onChange={(e) => {
+                                  const newLinks = [...bioData.links];
+                                  newLinks[idx].icon = e.target.value as any;
+                                  newLinks[idx].label = e.target.options[e.target.selectedIndex].text;
+                                  setBioData({ ...bioData, links: newLinks });
+                                }}
+                                className="bg-[#1f1122] border border-white/10 rounded-lg p-2 text-xs text-white outline-none focus:border-[#ce2bee] w-full sm:w-auto"
+                              >
+                                <option value="instagram">Instagram</option>
+                                <option value="youtube">YouTube</option>
+                                <option value="twitter">Twitter</option>
+                                <option value="linkedin">LinkedIn</option>
+                                <option value="github">GitHub</option>
+                                <option value="facebook">Facebook</option>
+                                <option value="tiktok">TikTok</option>
+                                <option value="website">Website</option>
+                                <option value="shop">Shop</option>
+                              </select>
+                              <div className="flex-1 flex flex-col gap-1 w-full sm:w-auto">
+                                <input
+                                  value={link.label}
+                                  onChange={(e) => {
+                                    const newLinks = [...bioData.links];
+                                    newLinks[idx].label = e.target.value;
+                                    setBioData({ ...bioData, links: newLinks });
+                                  }}
+                                  placeholder="Label"
+                                  className="bg-transparent border-none outline-none text-sm font-bold w-full"
+                                />
+                                <input
+                                  value={link.url}
+                                  onChange={(e) => {
+                                    const newLinks = [...bioData.links];
+                                    newLinks[idx].url = e.target.value;
+                                    setBioData({ ...bioData, links: newLinks });
+                                  }}
+                                  placeholder="https://..."
+                                  className="bg-transparent border-none outline-none text-[10px] text-[#c092c9] w-full"
+                                />
+                              </div>
+                              <button
+                                onClick={() => setBioData({ ...bioData, links: bioData.links.filter((_: BioLink, i: number) => i !== idx) })}
+                                className="absolute top-4 right-4 sm:relative sm:top-0 sm:right-0 text-white/20 hover:text-red-400 p-2 transition-colors shrink-0"
+                              >
+                                <Trash2 size={16} />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                        <button
+                          onClick={() => setBioData({ ...bioData, links: [...bioData.links, { label: 'My Website', url: 'https://', icon: 'website' }] })}
+                          className="w-full mt-4 bg-[#ce2bee]/10 text-[#ce2bee] hover:bg-[#ce2bee] hover:text-white py-3 rounded-xl border border-[#ce2bee]/30 font-bold transition-all flex items-center justify-center gap-2 text-xs uppercase tracking-widest"
+                        >
+                          <Plus size={16} /> Add Link
+                        </button>
                       </div>
                     </div>
-                  </div>
+                  </motion.div>
+                )}
 
-                  <div>
-                    <label className="block text-sm font-extrabold text-[#c092c9] mb-2 uppercase tracking-wider">Links</label>
-                    <div className="space-y-3 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar">
-                      {bioData.links.map((link: BioLink, idx: number) => (
-                        <div key={idx} className="flex gap-3 items-center bg-[#0a050c]/50 p-4 rounded-2xl border border-white/5 group hover:border-[#ce2bee]/30 transition-all">
-                          <select
-                            value={link.icon}
-                            onChange={(e) => {
-                              const newLinks = [...bioData.links];
-                              newLinks[idx].icon = e.target.value as any;
-                              newLinks[idx].label = e.target.options[e.target.selectedIndex].text;
-                              setBioData({ ...bioData, links: newLinks });
-                            }}
-                            className="bg-[#1f1122] border border-white/10 rounded-lg p-2 text-xs text-white outline-none focus:border-[#ce2bee]"
-                          >
-                            <option value="instagram">Instagram</option>
-                            <option value="youtube">YouTube</option>
-                            <option value="twitter">X / Twitter</option>
-                            <option value="linkedin">LinkedIn</option>
-                            <option value="github">GitHub</option>
-                            <option value="facebook">Facebook</option>
-                            <option value="tiktok">TikTok</option>
-                            <option value="website">Website</option>
-                            <option value="shop">Shop</option>
-                          </select>
-                          <div className="flex-1 flex flex-col gap-2">
-                            <input
-                              value={link.label}
-                              onChange={(e) => {
-                                const newLinks = [...bioData.links];
-                                newLinks[idx].label = e.target.value;
-                                setBioData({ ...bioData, links: newLinks });
-                              }}
-                              placeholder="Label"
-                              className="bg-transparent border-none outline-none text-sm font-bold w-full"
-                            />
-                            <input
-                              value={link.url}
-                              onChange={(e) => {
-                                const newLinks = [...bioData.links];
-                                newLinks[idx].url = e.target.value;
-                                setBioData({ ...bioData, links: newLinks });
-                              }}
-                              placeholder="https://..."
-                              className="bg-transparent border-none outline-none text-[10px] text-[#c092c9] w-full"
-                            />
-                          </div>
-                          <button
-                            onClick={() => setBioData({ ...bioData, links: bioData.links.filter((_: BioLink, i: number) => i !== idx) })}
-                            className="text-white/20 hover:text-red-400 p-2 transition-colors"
-                          >
-                            <Trash2 size={18} />
-                          </button>
-                        </div>
-                      ))}
+                {activeTab === 'settings' && user && (
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className="bg-[#1f1122]/40 backdrop-blur-2xl border border-white/5 p-6 sm:p-8 rounded-[24px] sm:rounded-[32px] shadow-2xl space-y-4"
+                  >
+                    <div className="flex items-center gap-3 mb-2">
+                      <div className="p-2 bg-green-500/10 rounded-lg text-green-500">
+                        <Check size={20} />
+                      </div>
+                      <h2 className="text-xl font-bold">Account</h2>
+                    </div>
+                    <div className="bg-[#0a050c]/50 p-6 rounded-2xl border border-white/5 text-center truncate">
+                      <p className="text-[#c092c9] text-[10px] mb-1 uppercase tracking-widest font-black">Current Email</p>
+                      <p className="text-white font-mono text-sm sm:text-base truncate">{user.email}</p>
                     </div>
                     <button
-                      onClick={() => setBioData({ ...bioData, links: [...bioData.links, { label: 'My Website', url: 'https://', icon: 'website' }] })}
-                      className="w-full mt-4 bg-[#ce2bee]/10 text-[#ce2bee] hover:bg-[#ce2bee] hover:text-white py-3 rounded-xl border border-[#ce2bee]/30 font-bold transition-all flex items-center justify-center gap-2"
+                      onClick={() => auth.signOut()}
+                      className="w-full bg-white/5 hover:bg-red-500/20 text-white/60 hover:text-red-400 py-3 rounded-xl border border-white/10 hover:border-red-500/30 font-bold transition-all text-xs tracking-widest uppercase"
                     >
-                      <Plus size={18} /> ADD NEW SOCIAL LINK
+                      Sign Out
+                    </button>
+                  </motion.div>
+                )}
+
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="bg-[#ce2bee]/5 border border-[#ce2bee]/20 p-5 sm:p-6 rounded-[24px] flex flex-col gap-4"
+                >
+                  <div className="flex items-center justify-between gap-4">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <Cloud size={16} className="text-[#ce2bee] shrink-0" />
+                      <div className="min-w-0">
+                        <p className="text-[#ce2bee] text-[10px] font-black uppercase tracking-widest truncate">Profile Link</p>
+                        <p className="text-white/40 text-[9px] uppercase font-bold tracking-tighter truncate">Updates instantly</p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={copyToClipboard}
+                      className="bg-[#ce2bee] text-white p-3 rounded-xl hover:scale-105 active:scale-95 transition-all shadow-lg shadow-[#ce2bee]/20 shrink-0"
+                    >
+                      {copying ? <Check size={18} /> : <Copy size={18} />}
                     </button>
                   </div>
-                </div>
-              </motion.div>
-            )}
 
-            {activeTab === 'settings' && user && (
-              <motion.div
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className="bg-[#1f1122]/40 backdrop-blur-2xl border border-white/5 p-8 rounded-[32px] shadow-2xl space-y-4"
-              >
-                <div className="flex items-center gap-3 mb-2">
-                  <div className="p-2 bg-green-500/10 rounded-lg text-green-500">
-                    <Check size={20} />
+                  <div className="flex justify-center py-2">
+                    <div className="bg-white p-2 sm:p-3 rounded-xl shadow-lg">
+                      <QRCodeSVG
+                        value={shareableUrl}
+                        size={100}
+                        fgColor={qrColor}
+                        bgColor="#ffffff"
+                        level="L"
+                        marginSize={0}
+                      />
+                    </div>
                   </div>
-                  <h2 className="text-xl font-bold">Account Session</h2>
-                </div>
-                <div className="bg-[#0a050c]/50 p-6 rounded-2xl border border-white/5 text-center">
-                  <p className="text-[#c092c9] text-sm mb-1 uppercase tracking-widest font-bold">Logged in as</p>
-                  <p className="text-white font-mono text-lg truncate">{user.email}</p>
-                </div>
-                <button
-                  onClick={() => auth.signOut()}
-                  className="w-full bg-white/5 hover:bg-red-500/20 text-white/60 hover:text-red-400 py-3 rounded-xl border border-white/10 hover:border-red-500/30 font-bold transition-all"
-                >
-                  SIGN OUT
-                </button>
-              </motion.div>
-            )}
 
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="bg-[#ce2bee]/5 border border-[#ce2bee]/20 p-6 rounded-[24px] flex flex-col gap-4"
-            >
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Cloud size={16} className="text-[#ce2bee]" />
-                  <div>
-                    <p className="text-[#ce2bee] text-xs font-black uppercase tracking-widest">Shareable Profile Link</p>
-                    <p className="text-white/40 text-[10px]">Links update instantly based on your changes</p>
+                  <div className="bg-[#0a050c]/80 p-3 rounded-xl border border-white/5 truncate font-mono text-[10px] text-[#c092c9]">
+                    {shareableUrl}
                   </div>
-                </div>
-                <button
-                  onClick={copyToClipboard}
-                  className="bg-[#ce2bee] text-white p-3 rounded-xl hover:scale-105 active:scale-95 transition-all shadow-lg shadow-[#ce2bee]/20"
-                >
-                  {copying ? <Check size={20} /> : <Copy size={20} />}
-                </button>
-              </div>
-
-              <div className="flex justify-center py-2">
-                <div className="bg-white p-3 rounded-xl shadow-lg">
-                  <QRCodeSVG
-                    value={shareableUrl}
-                    size={120}
-                    fgColor={qrColor}
-                    bgColor="#ffffff"
-                    level="L"
-                    marginSize={0}
-                  />
-                </div>
-              </div>
-
-              <div className="bg-[#0a050c]/80 p-4 rounded-xl border border-white/5 truncate font-mono text-xs text-[#c092c9]">
-                {shareableUrl}
-              </div>
-            </motion.div>
-
-            <div className="flex gap-4">
-              <button
-                onClick={downloadQR}
-                className="flex-1 bg-white text-black h-16 rounded-[24px] font-black text-lg flex items-center justify-center gap-3 hover:scale-[1.02] transition-all active:scale-95 shadow-[0_0_30px_rgba(255,255,255,0.2)]"
-              >
-                <Download size={24} /> DOWNLOAD QR
-              </button>
-              <button className="w-16 h-16 bg-[#1f1122]/50 backdrop-blur-xl border border-white/10 rounded-[24px] flex items-center justify-center hover:bg-[#ce2bee]/20 transition-all group">
-                <Share2 size={24} className="group-hover:scale-110 transition-transform" />
-              </button>
-            </div>
-          </motion.div>
-
-          <div className="relative sticky top-12 flex flex-col items-center">
-            <AnimatePresence mode="wait">
-              {activeTab === 'qr' ? (
-                <motion.div
-                  key="qr-preview"
-                  initial={{ opacity: 0, scale: 0.9, rotateY: -20 }}
-                  animate={{ opacity: 1, scale: 1, rotateY: 0 }}
-                  exit={{ opacity: 0, scale: 0.9, rotateY: 20 }}
-                  className="bg-white p-12 rounded-[56px] shadow-[0_0_100px_rgba(206,43,238,0.4)] flex items-center justify-center m-auto border-[12px] border-[#1f1122]"
-                >
-                  <QRCodeSVG
-                    id="qr-code-svg"
-                    value={activeTab === 'qr' ? url : shareableUrl}
-                    size={300}
-                    fgColor={qrColor}
-                    bgColor={qrBgColor}
-                    level="L"
-                    includeMargin={false}
-                  />
                 </motion.div>
-              ) : activeTab === 'bio' ? (
-                <motion.div
-                  key="bio-preview"
-                  initial={{ opacity: 0, scale: 0.9, y: 30 }}
-                  animate={{ opacity: 1, scale: 1, y: 0 }}
-                  exit={{ opacity: 0, scale: 0.9, y: -30 }}
-                  className="w-full flex justify-center"
-                >
-                  <BioPage {...bioData} />
-                </motion.div>
-              ) : (
-                <motion.div
-                  key="settings-preview"
-                  initial={{ opacity: 0, scale: 0.9, y: 30 }}
-                  animate={{ opacity: 1, scale: 1, y: 0 }}
-                  exit={{ opacity: 0, scale: 0.9, y: -30 }}
-                  className="w-full flex justify-center"
-                >
-                  <LoginPage />
-                </motion.div>
-              )}
-            </AnimatePresence>
 
-            <AnimatePresence>
-              {showLoginPopup && !user && activeTab !== 'settings' && (
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
-                >
-                  <motion.div
-                    initial={{ scale: 0.9, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
-                    exit={{ scale: 0.9, opacity: 0 }}
-                    className="relative max-w-md w-full"
+                <div className="flex gap-4">
+                  <button
+                    onClick={downloadQR}
+                    className="flex-1 bg-white text-black h-14 sm:h-16 rounded-[20px] sm:rounded-[24px] font-black text-sm sm:text-lg flex items-center justify-center gap-2 sm:gap-3 hover:scale-[1.02] transition-all active:scale-95 shadow-xl"
                   >
+                    <Download size={20} /> <span className="uppercase">Download QR</span>
+                  </button>
+                  <button className="w-14 h-14 sm:w-16 sm:h-16 bg-[#1f1122]/50 backdrop-blur-xl border border-white/10 rounded-[20px] sm:rounded-[24px] flex items-center justify-center hover:bg-[#ce2bee]/20 transition-all group shrink-0">
+                    <Share2 size={20} className="group-hover:scale-110 transition-transform" />
+                  </button>
+                </div>
+              </motion.div>
+
+              <div className="relative lg:sticky lg:top-12 flex flex-col items-center order-1 lg:order-2">
+                <AnimatePresence mode="wait">
+                  {activeTab === 'qr' ? (
+                    <motion.div
+                      key="qr-preview"
+                      initial={{ opacity: 0, scale: 0.9, rotateY: -20 }}
+                      animate={{ opacity: 1, scale: 1, rotateY: 0 }}
+                      exit={{ opacity: 0, scale: 0.9, rotateY: 20 }}
+                      className="bg-white p-8 sm:p-12 rounded-[40px] sm:rounded-[56px] shadow-[0_0_80px_rgba(206,43,238,0.3)] flex items-center justify-center border-[8px] sm:border-[12px] border-[#1f1122] w-fit"
+                    >
+                      <QRCodeSVG
+                        id="qr-code-svg"
+                        value={activeTab === 'qr' ? url : shareableUrl}
+                        size={Math.min(window.innerWidth - 100, 300)}
+                        fgColor={qrColor}
+                        bgColor={qrBgColor}
+                        level="L"
+                        includeMargin={false}
+                      />
+                    </motion.div>
+                  ) : activeTab === 'bio' ? (
+                    <motion.div
+                      key="bio-preview"
+                      initial={{ opacity: 0, scale: 0.9, y: 30 }}
+                      animate={{ opacity: 1, scale: 1, y: 0 }}
+                      exit={{ opacity: 0, scale: 0.9, y: -30 }}
+                      className="w-full flex justify-center"
+                    >
+                      <BioPage {...bioData} />
+                    </motion.div>
+                  ) : (
+                    <motion.div
+                      key="settings-preview"
+                      initial={{ opacity: 0, scale: 0.9, y: 30 }}
+                      animate={{ opacity: 1, scale: 1, y: 0 }}
+                      exit={{ opacity: 0, scale: 0.9, y: -30 }}
+                      className="w-full flex justify-center px-4"
+                    >
+                      <div className="w-full max-w-md bg-[#0a050c] rounded-[32px] border border-white/10 shadow-2xl overflow-hidden">
+                        <div className="bg-[#1f1122]/80 backdrop-blur-md p-6 border-b border-white/5 text-center">
+                          <h2 className="text-white text-base font-bold tracking-tight uppercase tracking-widest">Login / Security</h2>
+                        </div>
+                        <div className="p-4 sm:p-6">
+                          <LoginPage />
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+
+                <div className="mt-8 sm:mt-12 text-center pb-8 lg:pb-0">
+                  <div className="flex items-center gap-2 justify-center text-[#ce2bee] mb-2 font-black uppercase tracking-widest text-[9px] sm:text-[10px]">
+                    <div className="w-2 h-2 rounded-full bg-[#ce2bee] animate-ping" />
+                    Live Branding Active
+                  </div>
+                  <p className="text-[11px] sm:text-sm font-medium text-white/40 uppercase tracking-wider">
+                    {activeTab === 'qr' ? 'Branded QR Code' : activeTab === 'settings' ? 'Account Settings' : 'Profile Preview'}
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+        </main>
+
+        <AnimatePresence>
+          {showLoginPopup && !user && activeTab !== 'settings' && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-xl p-4 sm:p-6"
+            >
+              <button
+                onClick={() => setShowLoginPopup(false)}
+                className="absolute inset-0 w-full h-full cursor-default"
+              />
+              <motion.div
+                initial={{ scale: 0.9, opacity: 0, y: 20 }}
+                animate={{ scale: 1, opacity: 1, y: 0 }}
+                exit={{ scale: 0.9, opacity: 0, y: 20 }}
+                transition={{ type: "spring", duration: 0.5, bounce: 0.3 }}
+                className="relative max-w-md w-full"
+              >
+                <div className="absolute -inset-1 bg-gradient-to-r from-[#ce2bee] to-[#422348] rounded-[36px] blur-xl opacity-25"></div>
+
+                <div className="relative bg-[#0a050c] rounded-[32px] border border-white/10 shadow-2xl overflow-hidden">
+                  <div className="bg-[#1f1122]/80 backdrop-blur-md p-6 sm:p-8 pb-4 sm:pb-6 border-b border-white/5 relative">
                     <button
                       onClick={() => setShowLoginPopup(false)}
-                      className="absolute -top-12 right-0 text-white hover:text-[#ce2bee] transition-colors"
+                      className="absolute top-4 sm:top-6 right-4 sm:right-6 w-8 h-8 flex items-center justify-center bg-white/5 hover:bg-white/10 rounded-full text-[#c092c9] hover:text-white transition-all hover:rotate-90 group/close z-10"
                     >
-                      <Plus className="rotate-45" size={32} />
+                      <Plus className="rotate-45 group-hover/close:scale-110" size={20} />
                     </button>
-                    <LoginPage />
-                  </motion.div>
-                </motion.div>
-              )}
-            </AnimatePresence>
 
-            <div className="mt-12 text-center">
-              <div className="flex items-center gap-2 justify-center text-[#ce2bee] mb-2 font-black uppercase tracking-widest text-[10px]">
-                <div className="w-2 h-2 rounded-full bg-[#ce2bee] animate-ping" />
-                Live Branding Active
-              </div>
-              <p className="text-sm font-medium text-white/40">
-                {activeTab === 'qr' ? 'Branded QR Code' : activeTab === 'settings' ? 'Account Settings' : 'Profile Preview'}
-              </p>
-            </div>
-          </div>
-        </main>
+                    <div className="flex items-center gap-3 sm:gap-4 mb-3 sm:mb-4">
+                      <div className="w-10 h-10 sm:w-12 sm:h-12 bg-[#ce2bee] rounded-2xl flex items-center justify-center shadow-lg shadow-[#ce2bee]/20">
+                        <Cloud className="text-white" size={20} />
+                      </div>
+                      <div>
+                        <h2 className="text-lg sm:text-xl font-black text-white leading-none">Cloud Sync</h2>
+                        <p className="text-[#ce2bee] text-[9px] font-bold uppercase tracking-[0.1em] mt-1">Premium Feature</p>
+                      </div>
+                    </div>
+                    <p className="text-[#c092c9] text-xs sm:text-sm leading-relaxed">
+                      Login now to securely store your Rexpo profiles and access them from any device.
+                    </p>
+                  </div>
+
+                  <div className="p-4 sm:p-6 max-h-[60vh] overflow-y-auto custom-scrollbar">
+                    <LoginPage />
+                  </div>
+
+                  <div className="p-4 bg-[#1f1122]/30 border-t border-white/5 text-center">
+                    <p className="text-[9px] text-[#c092c9]/50 uppercase tracking-widest font-black">
+                      Powered by Rexplore Technologies
+                    </p>
+                  </div>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
 
-      <footer className="w-full text-center py-6 mt-12 text-white/20 text-xs text-[#c092c9]">
+      <footer className="w-full text-center py-6 mt-12 text-white/20 text-[10px] uppercase font-black tracking-widest border-t border-white/5 bg-[#0a050c]/80 backdrop-blur-md">
         <p>Developed by Rexplore Technologies &copy; 2026</p>
       </footer>
 
