@@ -1,40 +1,67 @@
-import React, { useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import LZString from 'lz-string';
 import BioPage from './components/BioPage';
+import { doc, getDoc } from 'firebase/firestore';
+import { db } from './firebase';
 
 const PreviewPage: React.FC = () => {
     const [searchParams] = useSearchParams();
     const dataParam = searchParams.get('d');
+    const idParam = searchParams.get('id');
+    const [bioData, setBioData] = useState<any>(null);
+    const [loading, setLoading] = useState(true);
 
-    const bioData = useMemo(() => {
-        if (!dataParam) return null;
-        try {
-            const decompressed = LZString.decompressFromEncodedURIComponent(dataParam);
-            if (!decompressed) return null;
-            const parsed = JSON.parse(decompressed);
+    useEffect(() => {
+        const loadData = async () => {
+            setLoading(true);
+            try {
+                if (idParam) {
+                    const docRef = doc(db, 'profiles', idParam);
+                    const docSnap = await getDoc(docRef);
+                    if (docSnap.exists()) {
+                        setBioData(docSnap.data());
+                    }
+                } else if (dataParam) {
+                    const decompressed = LZString.decompressFromEncodedURIComponent(dataParam);
+                    if (decompressed) {
+                        const parsed = JSON.parse(decompressed);
 
-            // Handle both legacy (full keys) and new minified data
-            if (parsed.n || parsed.r) {
-                return {
-                    name: parsed.n,
-                    role: parsed.r,
-                    avatarUrl: parsed.a,
-                    qrColor: parsed.c,
-                    links: Array.isArray(parsed.l) ? parsed.l.map((link: any) => ({
-                        label: link.l,
-                        url: link.u,
-                        icon: link.i
-                    })) : []
-                };
+                        // Handle both legacy (full keys) and new minified data
+                        if (parsed.n || parsed.r) {
+                            setBioData({
+                                name: parsed.n,
+                                role: parsed.r,
+                                avatarUrl: parsed.a,
+                                qrColor: parsed.c,
+                                links: Array.isArray(parsed.l) ? parsed.l.map((link: any) => ({
+                                    label: link.l,
+                                    url: link.u,
+                                    icon: link.i
+                                })) : []
+                            });
+                        } else {
+                            setBioData(parsed);
+                        }
+                    }
+                }
+            } catch (e) {
+                console.error('Failed to parse bio data', e);
+            } finally {
+                setLoading(false);
             }
+        };
 
-            return parsed;
-        } catch (e) {
-            console.error('Failed to parse bio data', e);
-            return null;
-        }
-    }, [dataParam]);
+        loadData();
+    }, [dataParam, idParam]);
+
+    if (loading) {
+        return (
+            <div className="min-h-screen bg-[#0a050c] flex items-center justify-center">
+                <div className="w-12 h-12 border-4 border-[#ce2bee]/30 border-t-[#ce2bee] rounded-full animate-spin" />
+            </div>
+        );
+    }
 
     if (!bioData) {
         return (
@@ -62,7 +89,7 @@ const PreviewPage: React.FC = () => {
                 <BioPage
                     {...bioData}
                     qrValue={window.location.href}
-                    qrColor={bioData.qrColor || '#ce2bee'}
+                    qrColor={bioData.qrColor || bioData.c || '#ce2bee'}
                 />
             </div>
         </div>

@@ -11,6 +11,7 @@ import {
     TiktokLogo,
     GithubLogo
 } from '@phosphor-icons/react';
+import { QRCodeSVG } from 'qrcode.react';
 
 interface BioPageProps {
     name: string;
@@ -21,9 +22,11 @@ interface BioPageProps {
         url: string;
         icon: string;
     }[];
+    qrValue?: string;
+    qrColor?: string;
 }
 
-const BioPage: React.FC<BioPageProps> = ({ name, role, avatarUrl, links }) => {
+const BioPage: React.FC<BioPageProps> = ({ name, role, avatarUrl, links, qrValue, qrColor = '#000000' }) => {
     const getIcon = (iconName: string) => {
         switch (iconName) {
             case 'instagram': return <InstagramLogo size={24} />;
@@ -81,6 +84,22 @@ const BioPage: React.FC<BioPageProps> = ({ name, role, avatarUrl, links }) => {
                         ))}
                     </div>
                 </div>
+
+                {qrValue && (
+                    <div className="flex flex-col items-center p-6 gap-3">
+                        <div className="p-3 bg-white rounded-xl shadow-lg">
+                            <QRCodeSVG
+                                value={qrValue}
+                                size={120}
+                                fgColor={qrColor}
+                                bgColor="#ffffff"
+                                level="M"
+                                marginSize={0}
+                            />
+                        </div>
+                        <p className="text-white/40 text-[10px] uppercase font-bold tracking-widest">Scan to Share</p>
+                    </div>
+                )}
 
                 <div className="px-4 py-8 mt-4 border-t border-white/5 flex flex-col items-center gap-4">
                     <div className="flex flex-col items-center gap-1">

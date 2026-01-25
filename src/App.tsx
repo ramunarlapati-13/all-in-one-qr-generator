@@ -116,7 +116,9 @@ function App() {
           const docRef = doc(db, 'profiles', currentUser.uid);
           const docSnap = await getDoc(docRef);
           if (docSnap.exists()) {
-            setBioData(docSnap.data() as BioData);
+            const data = docSnap.data();
+            setBioData(data as BioData);
+            if (data.qrColor) setQrColor(data.qrColor);
             setLastSaved(new Date());
           }
         } catch (e) {
@@ -202,7 +204,7 @@ function App() {
     const timeoutId = setTimeout(async () => {
       setSaving(true);
       try {
-        await setDoc(doc(db, 'profiles', user.uid), bioData);
+        await setDoc(doc(db, 'profiles', user.uid), { ...bioData, qrColor });
         setLastSaved(new Date());
       } catch (e) {
         console.error('Auto-save failed:', e);
@@ -212,9 +214,13 @@ function App() {
     }, 2000);
 
     return () => clearTimeout(timeoutId);
-  }, [bioData, user?.uid]);
+  }, [bioData, user?.uid, qrColor]);
 
   const shareableUrl = useMemo(() => {
+    if (user && user.uid) {
+      return `${window.location.origin}/p?id=${user.uid}`;
+    }
+
     const minifiedData = {
       n: bioData.name,
       r: bioData.role,
@@ -237,7 +243,7 @@ function App() {
     }
 
     return `${window.location.origin}/p?d=${compressed}`;
-  }, [bioData, qrColor]);
+  }, [bioData, qrColor, user]);
 
   const copyToClipboard = () => {
     navigator.clipboard.writeText(shareableUrl);
