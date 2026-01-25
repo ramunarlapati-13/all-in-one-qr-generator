@@ -60,6 +60,7 @@ function App() {
   const [saving, setSaving] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
 
+
   // Bio Page State
   const [bioData, setBioData] = useState<BioData>(() => {
     const dataParam = searchParams.get('d');
@@ -257,7 +258,7 @@ function App() {
         <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-[#422348]/30 blur-[120px] rounded-full" />
       </div>
 
-      <div className="relative z-10 container mx-auto px-4 sm:px-6 py-8 lg:py-12">
+      <div className="relative z-10 w-[80%] mx-auto py-8 lg:py-12">
         <header className="flex flex-col md:flex-row items-center justify-between mb-10 md:mb-16 space-y-8 md:space-y-0 text-center md:text-left">
           <motion.div
             initial={{ opacity: 0, x: -20 }}
@@ -305,8 +306,12 @@ function App() {
           {activeTab === 'admin' ? (
             <AdminPage />
           ) : (
-            <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 items-start">
-              <motion.div layout className="space-y-6 sm:space-y-8 order-2 lg:order-1">
+            <div className="flex flex-col gap-12 max-w-3xl mx-auto">
+              {/* Configuration Panel */}
+              <motion.div
+                layout
+                className="space-y-6 sm:space-y-8 w-full"
+              >
                 {activeTab === 'qr' && (
                   <motion.div
                     initial={{ opacity: 0, scale: 0.95 }}
@@ -477,7 +482,7 @@ function App() {
                                   newLinks[idx].label = e.target.options[e.target.selectedIndex].text;
                                   setBioData({ ...bioData, links: newLinks });
                                 }}
-                                className="bg-[#1f1122] border border-white/10 rounded-lg p-2 text-xs text-white outline-none focus:border-[#ce2bee] w-full sm:w-auto"
+                                className="bg-[#1f1122] border border-white/10 rounded-lg p-2 text-xs text-white outline-none focus:border-[#ce2bee] w-32"
                               >
                                 <option value="instagram">Instagram</option>
                                 <option value="youtube">YouTube</option>
@@ -556,59 +561,63 @@ function App() {
                   </motion.div>
                 )}
 
-                <motion.div
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="bg-[#ce2bee]/5 border border-[#ce2bee]/20 p-5 sm:p-6 rounded-[24px] flex flex-col gap-4"
-                >
-                  <div className="flex items-center justify-between gap-4">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <Cloud size={16} className="text-[#ce2bee] shrink-0" />
-                      <div className="min-w-0">
-                        <p className="text-[#ce2bee] text-[10px] font-black uppercase tracking-widest truncate">Profile Link</p>
-                        <p className="text-white/40 text-[9px] uppercase font-bold tracking-tighter truncate">Updates instantly</p>
+                {/* Shared Copy/Download Section */}
+                <div className="space-y-4">
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="bg-[#ce2bee]/5 border border-[#ce2bee]/20 p-5 sm:p-6 rounded-[24px] flex flex-col gap-4"
+                  >
+                    <div className="flex items-center justify-between gap-4">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <Cloud size={16} className="text-[#ce2bee] shrink-0" />
+                        <div className="min-w-0">
+                          <p className="text-[#ce2bee] text-[10px] font-black uppercase tracking-widest truncate">Profile Link</p>
+                          <p className="text-white/40 text-[9px] uppercase font-bold tracking-tighter truncate">Updates instantly</p>
+                        </div>
+                      </div>
+                      <button
+                        onClick={copyToClipboard}
+                        className="bg-[#ce2bee] text-white p-3 rounded-xl hover:scale-105 active:scale-95 transition-all shadow-lg shadow-[#ce2bee]/20 shrink-0"
+                      >
+                        {copying ? <Check size={18} /> : <Copy size={18} />}
+                      </button>
+                    </div>
+
+                    <div className="flex justify-center py-2">
+                      <div className="bg-white p-2 sm:p-3 rounded-xl shadow-lg">
+                        <QRCodeSVG
+                          value={shareableUrl}
+                          size={100}
+                          fgColor={qrColor}
+                          bgColor="#ffffff"
+                          level="L"
+                          marginSize={0}
+                        />
                       </div>
                     </div>
+
+                    <div className="bg-[#0a050c]/80 p-3 rounded-xl border border-white/5 truncate font-mono text-[10px] text-[#c092c9]">
+                      {shareableUrl}
+                    </div>
+                  </motion.div>
+
+                  <div className="flex gap-4">
                     <button
-                      onClick={copyToClipboard}
-                      className="bg-[#ce2bee] text-white p-3 rounded-xl hover:scale-105 active:scale-95 transition-all shadow-lg shadow-[#ce2bee]/20 shrink-0"
+                      onClick={downloadQR}
+                      className="flex-1 bg-white text-black h-14 sm:h-16 rounded-[20px] sm:rounded-[24px] font-black text-sm sm:text-lg flex items-center justify-center gap-2 sm:gap-3 hover:scale-[1.02] transition-all active:scale-95 shadow-xl"
                     >
-                      {copying ? <Check size={18} /> : <Copy size={18} />}
+                      <Download size={20} /> <span className="uppercase">Download QR</span>
+                    </button>
+                    <button className="w-14 h-14 sm:w-16 sm:h-16 bg-[#1f1122]/50 backdrop-blur-xl border border-white/10 rounded-[24px] flex items-center justify-center hover:bg-[#ce2bee]/20 transition-all group shrink-0">
+                      <Share2 size={20} className="group-hover:scale-110 transition-transform" />
                     </button>
                   </div>
-
-                  <div className="flex justify-center py-2">
-                    <div className="bg-white p-2 sm:p-3 rounded-xl shadow-lg">
-                      <QRCodeSVG
-                        value={shareableUrl}
-                        size={100}
-                        fgColor={qrColor}
-                        bgColor="#ffffff"
-                        level="L"
-                        marginSize={0}
-                      />
-                    </div>
-                  </div>
-
-                  <div className="bg-[#0a050c]/80 p-3 rounded-xl border border-white/5 truncate font-mono text-[10px] text-[#c092c9]">
-                    {shareableUrl}
-                  </div>
-                </motion.div>
-
-                <div className="flex gap-4">
-                  <button
-                    onClick={downloadQR}
-                    className="flex-1 bg-white text-black h-14 sm:h-16 rounded-[20px] sm:rounded-[24px] font-black text-sm sm:text-lg flex items-center justify-center gap-2 sm:gap-3 hover:scale-[1.02] transition-all active:scale-95 shadow-xl"
-                  >
-                    <Download size={20} /> <span className="uppercase">Download QR</span>
-                  </button>
-                  <button className="w-14 h-14 sm:w-16 sm:h-16 bg-[#1f1122]/50 backdrop-blur-xl border border-white/10 rounded-[24px] flex items-center justify-center hover:bg-[#ce2bee]/20 transition-all group shrink-0">
-                    <Share2 size={20} className="group-hover:scale-110 transition-transform" />
-                  </button>
                 </div>
               </motion.div>
 
-              <div className="relative lg:sticky lg:top-12 flex flex-col items-center order-1 lg:order-2">
+              {/* Preview Panel */}
+              <div className="w-full flex flex-col items-center pt-8 border-t border-white/5">
                 <AnimatePresence mode="wait">
                   {activeTab === 'qr' ? (
                     <motion.div
@@ -669,6 +678,7 @@ function App() {
                 </div>
               </div>
             </div>
+
           )}
         </main>
 
@@ -752,7 +762,7 @@ function App() {
           color: white;
         }
       `}</style>
-    </div>
+    </div >
   );
 }
 

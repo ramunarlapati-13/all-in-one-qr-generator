@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { db } from '../firebase';
-import { collection, query, onSnapshot, orderBy } from 'firebase/firestore';
+import { collection, query, onSnapshot } from 'firebase/firestore';
 import { Shield, Users, Clock, Mail, User as UserIcon } from 'lucide-react';
 import { motion } from 'framer-motion';
 
@@ -16,13 +16,25 @@ const AdminPage: React.FC = () => {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        // Order by creation date to show newest logins first
-        const q = query(collection(db, 'users'), orderBy('createdAt', 'desc'));
+        // We use a listener without orderBy first to ensure we get ALL users
+        // even those without a createdAt field yet. We will sort them in memory.
+        const q = query(collection(db, 'users'));
         const unsubscribe = onSnapshot(q, (snapshot) => {
             const usersData = snapshot.docs.map(doc => ({
                 ...doc.data()
             })) as UserStatus[];
-            setUsers(usersData);
+
+            // In-memory sort: newest first
+            const sortedUsers = usersData.sort((a, b) => {
+                const timeA = a.createdAt?.toDate ? a.createdAt.toDate().getTime() : 0;
+                const timeB = b.createdAt?.toDate ? b.createdAt.toDate().getTime() : 0;
+                return timeB - timeA;
+            });
+
+            setUsers(sortedUsers);
+            setLoading(false);
+        }, (error) => {
+            console.error("Firestore error:", error);
             setLoading(false);
         });
 
@@ -30,7 +42,7 @@ const AdminPage: React.FC = () => {
     }, []);
 
     const formatTime = (timestamp: any) => {
-        if (!timestamp) return 'Just now...';
+        if (!timestamp) return 'No record';
         const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
         return date.toLocaleString();
     };
@@ -127,7 +139,7 @@ const AdminPage: React.FC = () => {
 
                         <div className="pt-4 border-t border-white/5 flex items-center justify-between">
                             <span className="text-[9px] text-white/30 uppercase font-black tracking-widest italic">Member Since</span>
-                            <div className="flex items-center gap-1.5 text-[#ce2bee] text-[11px] font-bold uppercase tracking-tight">
+                            <div className="flex items-center gap-1.5 text-[#ce2bee] text-[10px] font-bold uppercase tracking-tight">
                                 <Clock size={10} />
                                 {formatTime(user.createdAt)}
                             </div>
