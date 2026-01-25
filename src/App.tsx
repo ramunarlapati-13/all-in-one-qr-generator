@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { QRCodeSVG } from 'qrcode.react';
 import {
@@ -38,10 +38,21 @@ interface BioLink {
 function App() {
   const [searchParams] = useSearchParams();
   const [activeTab, setActiveTab] = useState<Tab>('bio');
-  const [url, setUrl] = useState('https://raxplore.com');
+  const [url, setUrl] = useState('https://raxplore-technologies.vercel.app');
   const [qrColor, setQrColor] = useState('#000000');
   const [qrBgColor, setQrBgColor] = useState('#ffffff');
   const [copying, setCopying] = useState(false);
+  const [showLoginPopup, setShowLoginPopup] = useState(false);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (activeTab !== 'settings') {
+        setShowLoginPopup(true);
+      }
+    }, 60000); // 1 minute
+
+    return () => clearTimeout(timer);
+  }, [activeTab]);
 
   // Bio Page State
   const [bioData, setBioData] = useState(() => {
@@ -509,6 +520,33 @@ function App() {
               )}
             </AnimatePresence>
 
+            {/* Popup Logic */}
+            <AnimatePresence>
+              {showLoginPopup && activeTab !== 'settings' && (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+                >
+                  <motion.div
+                    initial={{ scale: 0.9, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    exit={{ scale: 0.9, opacity: 0 }}
+                    className="relative max-w-md w-full"
+                  >
+                    <button
+                      onClick={() => setShowLoginPopup(false)}
+                      className="absolute -top-12 right-0 text-white hover:text-[#ce2bee] transition-colors"
+                    >
+                      <Plus className="rotate-45" size={32} />
+                    </button>
+                    <LoginPage />
+                  </motion.div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
             <div className="mt-12 text-center">
               <div className="flex items-center gap-2 justify-center text-[#ce2bee] mb-2 font-black uppercase tracking-widest text-[10px]">
                 <div className="w-2 h-2 rounded-full bg-[#ce2bee] animate-ping" />
@@ -520,7 +558,11 @@ function App() {
             </div>
           </div>
         </main>
-      </div>
+      </div >
+
+      <footer className="w-full text-center py-6 mt-12 text-white/20 text-xs text-[#c092c9]">
+        <p>Developed by Rexplore Technologies &copy; 2026</p>
+      </footer>
 
       <style>{`
         .custom-scrollbar::-webkit-scrollbar {
@@ -538,7 +580,7 @@ function App() {
           color: white;
         }
       `}</style>
-    </div>
+    </div >
   );
 }
 
