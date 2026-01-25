@@ -1,8 +1,9 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { auth, db } from './firebase';
+import { auth, db, rtdb } from './firebase';
 import { onAuthStateChanged } from 'firebase/auth';
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { ref, set, onDisconnect, serverTimestamp as rtdbTimestamp } from 'firebase/database';
 import { QRCodeSVG } from 'qrcode.react';
 import {
   QrCode,
@@ -139,7 +140,7 @@ function App() {
     };
   }, [activeTab]);
 
-  // 2. Real-time User Tracking (The "Realtime Database" alternative)
+  // 2. Real-time User Tracking (RTDB)
   useEffect(() => {
     if (!user) return;
 
@@ -155,28 +156,26 @@ function App() {
           console.warn('IP fetch blocked or failed');
         }
 
-        const userRef = doc(db, 'users', user.uid);
-        const userSnap = await getDoc(userRef);
+        const userRef = ref(rtdb, `users/${user.uid}`);
 
         const baseData = {
           uid: user.uid,
           email: user.email,
           username: bioData.name || 'Unknown',
-          lastActive: serverTimestamp(),
+          lastActive: rtdbTimestamp(),
           ip: ipData.ip || 'Unknown',
           location: ipData.city !== 'Unknown' ? `${ipData.city}, ${ipData.region}, ${ipData.country_name}` : 'Unknown Location',
           isOnline: true
         };
 
-        if (!userSnap.exists()) {
-          await setDoc(userRef, {
-            ...baseData,
-            createdAt: serverTimestamp(),
-          });
-        } else {
-          await setDoc(userRef, baseData, { merge: true });
-        }
-        console.log("Activity tracked for:", user.email);
+        // Set data and handle disconnect
+        await set(userRef, baseData);
+        onDisconnect(userRef).update({
+          isOnline: false,
+          lastActive: rtdbTimestamp()
+        });
+
+        console.log("Activity tracked (RTDB) for:", user.email);
       } catch (e) {
         console.error('Tracking failed:', e);
       }
@@ -221,7 +220,15 @@ function App() {
       c: qrColor
     };
     const serialized = JSON.stringify(minifiedData);
-    const compressed = LZString.compressToEncodedURIComponent(serialized);
+    let compressed = LZString.compressToEncodedURIComponent(serialized);
+
+    // Safety check: if data is too long for QR (approx 2KB limit safe zone), try removing avatar
+    if (compressed.length > 2000) {
+      console.warn("Data too long for QR, removing avatar from link");
+      const noAvatarData = { ...minifiedData, a: '' };
+      compressed = LZString.compressToEncodedURIComponent(JSON.stringify(noAvatarData));
+    }
+
     return `${window.location.origin}/p?d=${compressed}`;
   }, [bioData, qrColor]);
 
@@ -441,14 +448,16 @@ function App() {
                                         try {
                                           const canvas = document.createElement('canvas');
                                           const ctx = canvas.getContext('2d');
-                                          const size = 300;
+                                          // Reduced size to prevent "Data too long" QR error
+                                          const size = 100;
                                           canvas.width = size;
                                           canvas.height = size;
                                           const minDim = Math.min(img.width, img.height);
                                           const startX = (img.width - minDim) / 2;
                                           const startY = (img.height - minDim) / 2;
                                           ctx?.drawImage(img, startX, startY, minDim, minDim, 0, 0, size, size);
-                                          const compressedBase64 = canvas.toDataURL('image/jpeg', 0.8);
+                                          // Low quality to keep base64 string short for QR code
+                                          const compressedBase64 = canvas.toDataURL('image/jpeg', 0.5);
                                           setBioData((prev: BioData) => ({ ...prev, avatarUrl: compressedBase64 }));
                                         } catch (err) {
                                           console.error('Canvas processing error:', err);
@@ -629,12 +638,13 @@ function App() {
                     >
                       <QRCodeSVG
                         id="qr-code-svg"
-                        value={activeTab === 'qr' ? url : shareableUrl}
-                        size={Math.min(window.innerWidth - 100, 300)}
+                        value={activeTab === 'qr' ? (url || window.location.origin) : (shareableUrl || window.location.origin)}
+                        size={300}
                         fgColor={qrColor}
                         bgColor={qrBgColor}
                         level="L"
                         includeMargin={false}
+                        className="w-full h-full max-w-[300px]"
                       />
                     </motion.div>
                   ) : activeTab === 'bio' ? (

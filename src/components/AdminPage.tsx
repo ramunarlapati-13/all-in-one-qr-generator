@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { db } from '../firebase';
-import { collection, query, onSnapshot } from 'firebase/firestore';
+import { rtdb } from '../firebase';
+import { ref, onValue } from 'firebase/database';
 import { Shield, Users, Clock, Mail, User as UserIcon } from 'lucide-react';
 import { motion } from 'framer-motion';
 
@@ -8,49 +8,73 @@ interface UserStatus {
     uid: string;
     email: string;
     username: string;
-    createdAt?: any;
+    createdAt?: number | object;
+    lastActive?: number | object;
+    isOnline?: boolean;
 }
 
 const AdminPage: React.FC = () => {
     const [users, setUsers] = useState<UserStatus[]>([]);
     const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
-        // We use a listener without orderBy first to ensure we get ALL users
-        // even those without a createdAt field yet. We will sort them in memory.
-        const q = query(collection(db, 'users'));
-        const unsubscribe = onSnapshot(q, (snapshot) => {
-            const usersData = snapshot.docs.map(doc => ({
-                ...doc.data()
-            })) as UserStatus[];
+        const usersRef = ref(rtdb, 'users');
+        const unsubscribe = onValue(usersRef, (snapshot) => {
+            const data = snapshot.val();
+            if (data) {
+                // Convert object { uid: { data... } } to array
+                const usersList = Object.values(data) as UserStatus[];
 
-            // In-memory sort: newest first
-            const sortedUsers = usersData.sort((a, b) => {
-                const timeA = a.createdAt?.toDate ? a.createdAt.toDate().getTime() : 0;
-                const timeB = b.createdAt?.toDate ? b.createdAt.toDate().getTime() : 0;
-                return timeB - timeA;
-            });
+                // Sort by lastActive if available, otherwise createdAt
+                // Note: RTDB timestamps might be just numbers (milliseconds)
+                const sortedUsers = usersList.sort((a, b) => {
+                    const timeA = (typeof a.lastActive === 'number' ? a.lastActive : 0);
+                    const timeB = (typeof b.lastActive === 'number' ? b.lastActive : 0);
+                    return timeB - timeA;
+                });
 
-            setUsers(sortedUsers);
+                setUsers(sortedUsers);
+            } else {
+                setUsers([]);
+            }
             setLoading(false);
-        }, (error) => {
-            console.error("Firestore error:", error);
+            setError(null);
+        }, (err) => {
+            console.error("RTDB error:", err);
+            setError(err.message);
             setLoading(false);
         });
 
+        // onValue returns the unsubscribe function directly in some SDK versions, 
+        // but standard usage is just calling off(). However, React effect cleanup 
+        // expects a function. The unsubscribe callback from onValue works.
         return () => unsubscribe();
     }, []);
 
     const formatTime = (timestamp: any) => {
         if (!timestamp) return 'No record';
-        const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
-        return date.toLocaleString();
+        // Handle RTDB serverTimestamp (which is milliseconds)
+        if (typeof timestamp === 'number') {
+            return new Date(timestamp).toLocaleString();
+        }
+        return 'Just now';
     };
 
     if (loading) {
         return (
             <div className="flex items-center justify-center p-20">
                 <div className="w-12 h-12 border-4 border-[#ce2bee]/20 border-t-[#ce2bee] rounded-full animate-spin" />
+            </div>
+        );
+    }
+
+    if (error) {
+        return (
+            <div className="p-8 bg-red-500/10 border border-red-500/50 rounded-2xl text-center">
+                <p className="text-red-400 font-bold mb-2">Failed to load users</p>
+                <p className="text-white/60 text-xs font-mono">{error}</p>
+                <p className="text-white/40 text-[10px] mt-4 uppercase tracking-widest">Check Realtime Database Rules</p>
             </div>
         );
     }
