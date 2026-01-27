@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://raxplore-technologies.vercel.app/sitemap.xml
