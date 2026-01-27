@@ -68,7 +68,7 @@ const DEFAULT_BIO_DATA: BioData = {
 function App() {
   const [searchParams] = useSearchParams();
   const [activeTab, setActiveTab] = useState<Tab>('bio');
-  const [url, setUrl] = useState('https://raxplore-technologies.vercel.app');
+  const [url, setUrl] = useState('https://aioqr.vercel.app');
   const [qrColor, setQrColor] = useState('#000000');
   const [qrBgColor, setQrBgColor] = useState('#ffffff');
   const [copying, setCopying] = useState(false);
