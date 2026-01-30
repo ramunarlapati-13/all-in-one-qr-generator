@@ -345,7 +345,7 @@ function App() {
 
           <nav className="flex bg-[#1f1122]/50 backdrop-blur-xl border border-white/5 p-1 rounded-2xl flex-wrap justify-center sm:justify-start">
             {(['qr', 'bio', 'settings', 'admin'] as Tab[]).map((tab) => {
-              if (tab === 'admin' && (!user || user.email !== 'ramunarlapati27@gmail.com')) return null;
+              if (tab === 'admin' && (!user || user.email !== import.meta.env.VITE_ADMIN_EMAIL)) return null;
 
               return (
                 <button

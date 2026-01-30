@@ -116,7 +116,9 @@ const AdminPage: React.FC = () => {
                                     <td className="py-5 px-4">
                                         <div className="flex flex-col">
                                             <span className="text-white font-bold text-base tracking-tight">{user.username}</span>
-                                            <span className="text-[#c092c9] text-xs font-medium opacity-70 mt-0.5">{user.email}</span>
+                                            <span className="text-[#c092c9] text-xs font-medium opacity-70 mt-0.5">
+                                                {user.email === import.meta.env.VITE_ADMIN_EMAIL ? '****** (Admin)' : user.email}
+                                            </span>
                                         </div>
                                     </td>
                                     <td className="py-5 px-4 text-right">
@@ -149,7 +151,7 @@ const AdminPage: React.FC = () => {
                                 <h3 className="text-white font-bold text-base truncate">{user.username}</h3>
                                 <div className="flex items-center gap-1.5 text-[#c092c9] text-[11px] truncate opacity-80 mt-1">
                                     <Mail size={12} />
-                                    {user.email}
+                                    {user.email === import.meta.env.VITE_ADMIN_EMAIL ? '****** (Admin)' : user.email}
                                 </div>
                             </div>
                         </div>
