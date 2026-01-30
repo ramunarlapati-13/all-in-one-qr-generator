@@ -29,6 +29,7 @@ import BioPage from './components/BioPage';
 // Optimize secondary components with lazy loading
 const LoginPage = lazy(() => import('./components/LoginPage'));
 const AdminPage = lazy(() => import('./components/AdminPage'));
+const LandingContent = lazy(() => import('./components/LandingContent'));
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -832,6 +833,10 @@ function App() {
           includeMargin={true}
         />
       </div>
+
+      <Suspense fallback={null}>
+        <LandingContent />
+      </Suspense>
 
       <footer className="w-full text-center py-6 mt-12 text-white/20 text-[10px] uppercase font-black tracking-widest border-t border-white/5 bg-[#0a050c]/80 backdrop-blur-md">
         <p>Developed by Rexplore Technologies &copy; 2026</p>
