@@ -216,8 +216,29 @@ const LoginPage: React.FC = () => {
                                     </span>
                                 </button>
                             </div>
-                            <div className="flex flex-col gap-2 mt-4 text-center px-4">
-                                <div className="flex justify-center gap-1 text-sm">
+                            <div className="mt-8 pt-8 border-t border-white/5 text-center space-y-4">
+                                <div className="flex items-center justify-center gap-6">
+                                    <div className="flex flex-col items-center gap-1 opacity-40">
+                                        <div className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center">
+                                            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2L4 5v6.09c0 5.05 3.41 9.76 8 10.91 4.59-1.15 8-5.86 8-10.91V5l-8-3zm0 2.18l6 2.25v4.61c0 3.92-2.55 7.63-6 8.71-3.45-1.08-6-4.79-6-8.71V6.43l6-2.25z" /></svg>
+                                        </div>
+                                        <span className="text-[8px] font-black uppercase tracking-widest text-[#c092c9]">Secure SSL</span>
+                                    </div>
+                                    <div className="flex flex-col items-center gap-1 opacity-40">
+                                        <div className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center">
+                                            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm4.59-12.42L10 14.17l-2.59-2.58L6 13l4 4 8-8z" /></svg>
+                                        </div>
+                                        <span className="text-[8px] font-black uppercase tracking-widest text-[#c092c9]">Verified Auth</span>
+                                    </div>
+                                    <div className="flex flex-col items-center gap-1 opacity-40">
+                                        <div className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center">
+                                            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z" /></svg>
+                                        </div>
+                                        <span className="text-[8px] font-black uppercase tracking-widest text-[#c092c9]">Privacy Safe</span>
+                                    </div>
+                                </div>
+                                <p className="text-[9px] text-[#c092c9]/30 uppercase font-bold tracking-tighter">Your data is never shared with third parties.</p>
+                                <div className="flex justify-center gap-1 text-sm pt-2">
                                     <p className="text-[#b49db9] font-normal leading-normal">
                                         {mode === 'signin' ? "Don't have an account?" : mode === 'signup' ? "Already have an account?" : "Remembered it?"}
                                     </p>

@@ -6,6 +6,9 @@ import './index.css'
 // Lazy load components for performance optimization
 const App = lazy(() => import('./App.tsx'));
 const PreviewPage = lazy(() => import('./PreviewPage.tsx'));
+const PrivacyPolicy = lazy(() => import('./pages/PrivacyPolicy.tsx'));
+const TermsOfService = lazy(() => import('./pages/TermsOfService.tsx'));
+const About = lazy(() => import('./pages/About.tsx'));
 
 const LoadingFallback = () => (
   <div className="min-h-[100dvh] bg-[#0a050c] flex items-center justify-center">
@@ -25,6 +28,9 @@ createRoot(document.getElementById('root')!).render(
         <Routes>
           <Route path="/" element={<App />} />
           <Route path="/p" element={<PreviewPage />} />
+          <Route path="/privacy" element={<PrivacyPolicy />} />
+          <Route path="/terms" element={<TermsOfService />} />
+          <Route path="/about" element={<About />} />
         </Routes>
       </Suspense>
     </BrowserRouter>

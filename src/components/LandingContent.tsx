@@ -32,7 +32,7 @@ const LandingContent: React.FC = () => {
         {
             icon: <BarChart className="text-[#ce2bee]" size={24} />,
             title: "Analytics Ready",
-            description: "Track your QR code performance. (Coming soon) features will help you understand your audience better."
+            description: "Advanced tracking systems ensure you can monitor your QR code performance and audience engagement metrics effectively."
         }
     ];
 
@@ -164,6 +164,84 @@ const LandingContent: React.FC = () => {
                     </div>
                 </div>
             </section>
+
+            {/* Deep Content Section for AdSense */}
+            <section className="space-y-12">
+                <div className="grid md:grid-cols-2 gap-12">
+                    <div className="space-y-4">
+                        <h3 className="text-2xl font-bold text-white">QR Code Best Practices</h3>
+                        <p className="text-[#c092c9] leading-relaxed">
+                            To ensure your QR codes are effective and easy to scan, follow these professional tips:
+                        </p>
+                        <ul className="space-y-3 text-[#c092c9] text-sm">
+                            <li className="flex gap-2">
+                                <span className="text-[#ce2bee]">●</span>
+                                <strong>Contrast is Key:</strong> Always use a dark color for the QR code and a light color for the background.
+                            </li>
+                            <li className="flex gap-2">
+                                <span className="text-[#ce2bee]">●</span>
+                                <strong>Size Matters:</strong> Ensure your QR code is at least 2cm x 2cm for print materials.
+                            </li>
+                            <li className="flex gap-2">
+                                <span className="text-[#ce2bee]">●</span>
+                                <strong>Quiet Zone:</strong> Keep a clear border around the QR code to help scanners identify it.
+                            </li>
+                            <li className="flex gap-2">
+                                <span className="text-[#ce2bee]">●</span>
+                                <strong>Test Before Printing:</strong> Always scan your generated code with multiple devices before final use.
+                            </li>
+                        </ul>
+                    </div>
+                    <div className="space-y-4">
+                        <h3 className="text-2xl font-bold text-white">Versatile Use Cases</h3>
+                        <p className="text-[#c092c9] leading-relaxed">
+                            QR codes can be used in numerous creative ways to boost engagement:
+                        </p>
+                        <ul className="space-y-3 text-[#c092c9] text-sm">
+                            <li className="flex gap-2">
+                                <span className="text-[#ce2bee]">●</span>
+                                <strong>Restaurant Menus:</strong> Provide a contactless dining experience for your customers.
+                            </li>
+                            <li className="flex gap-2">
+                                <span className="text-[#ce2bee]">●</span>
+                                <strong>Real Estate:</strong> Link directly to virtual tours or property listing pages.
+                            </li>
+                            <li className="flex gap-2">
+                                <span className="text-[#ce2bee]">●</span>
+                                <strong>Social Media:</strong> Use our "Link in Bio" feature to share all your profiles in one place.
+                            </li>
+                            <li className="flex gap-2">
+                                <span className="text-[#ce2bee]">●</span>
+                                <strong>Event Marketing:</strong> Simplify check-ins and provide instant access to event schedules.
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </section>
+
+            {/* Deep Dive Section */}
+            <section className="bg-gradient-to-b from-[#1f1122]/10 to-transparent p-10 rounded-[40px] border border-white/5">
+                <h3 className="text-2xl font-bold text-white mb-6">The Evolution of Digital Connectivity</h3>
+                <div className="space-y-6 text-[#c092c9] text-sm leading-relaxed text-left">
+                    <p>
+                        In the modern digital landscape, the speed of access is everything. AIO REXPO QR was born out of a necessity to simplify how people share their professional identities. By combining the robustness of static QR technology with the aesthetic flexibility of modern web design, we've created a tool that serves as a bridge between high-speed physical interaction and deep digital engagement.
+                    </p>
+                    <p>
+                        Our platform leverages secure cloud technologies to ensure that your Bio Pages are always available and lightning fast. Whether you're a content creator looking to consolidate your social footprint or a business aiming to modernize your contactless service, our infrastructure is optimized to provide the best possible experience for both the creator and the scanner.
+                    </p>
+                    <p>
+                        We continue to invest in our core technology to provide more diverse QR styles, better error correction for damaged codes, and more comprehensive analytics. Our commitment remains: keeping high-quality digital tools free and accessible for the global community of creators.
+                    </p>
+                </div>
+            </section>
+
+            {/* Legal Links Footer for Crawlers */}
+            <div className="pt-12 border-t border-white/5 flex flex-wrap justify-center gap-6 text-[10px] uppercase font-black tracking-widest text-white/40">
+                <a href="/about" className="hover:text-[#ce2bee] transition-colors">About Us</a>
+                <a href="/privacy" className="hover:text-[#ce2bee] transition-colors">Privacy Policy</a>
+                <a href="/terms" className="hover:text-[#ce2bee] transition-colors">Terms of Service</a>
+                <a href="/p?id=demo" className="hover:text-[#ce2bee] transition-colors">Sample Profile</a>
+            </div>
         </div>
     );
 };

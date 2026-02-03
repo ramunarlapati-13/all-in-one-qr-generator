@@ -838,8 +838,16 @@ function App() {
         <LandingContent />
       </Suspense>
 
-      <footer className="w-full text-center py-6 mt-12 text-white/20 text-[10px] uppercase font-black tracking-widest border-t border-white/5 bg-[#0a050c]/80 backdrop-blur-md">
-        <p>Developed by Rexplore Technologies &copy; 2026</p>
+      <footer className="w-full text-center py-10 mt-12 space-y-4 border-t border-white/5 bg-[#0a050c]/80 backdrop-blur-md">
+        <div className="flex flex-wrap justify-center gap-6 text-[10px] uppercase font-black tracking-widest text-[#c092c9]/40">
+          <a href="/about" className="hover:text-[#ce2bee] transition-colors">About</a>
+          <a href="/privacy" className="hover:text-[#ce2bee] transition-colors">Privacy</a>
+          <a href="/terms" className="hover:text-[#ce2bee] transition-colors">Terms</a>
+          <a href="https://rexplore.tech" target="_blank" rel="noopener noreferrer" className="hover:text-[#ce2bee] transition-colors">Developer</a>
+        </div>
+        <p className="text-white/20 text-[10px] uppercase font-black tracking-widest">
+          Developed by Rexplore Technologies &copy; 2026
+        </p>
       </footer>
 
       <AnimatePresence>
