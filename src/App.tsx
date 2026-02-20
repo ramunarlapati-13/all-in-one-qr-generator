@@ -29,7 +29,8 @@ import BioPage from './components/BioPage';
 // Optimize secondary components with lazy loading
 const LoginPage = lazy(() => import('./components/LoginPage'));
 const AdminPage = lazy(() => import('./components/AdminPage'));
-const LandingContent = lazy(() => import('./components/LandingContent'));
+import LandingContent from './components/LandingContent';
+import AdSenseScript from './components/AdSenseScript';
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -320,6 +321,7 @@ function App() {
 
   return (
     <div className="min-h-screen bg-[#0a050c] text-white selection:bg-[#ce2bee]/30 pb-20 sm:pb-12">
+      <AdSenseScript />
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-[#ce2bee]/20 blur-[120px] rounded-full animate-pulse" />
         <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-[#422348]/30 blur-[120px] rounded-full" />
@@ -834,9 +836,7 @@ function App() {
         />
       </div>
 
-      <Suspense fallback={null}>
-        <LandingContent />
-      </Suspense>
+      <LandingContent />
 
       <footer className="w-full text-center py-10 mt-12 space-y-4 border-t border-white/5 bg-[#0a050c]/80 backdrop-blur-md">
         <div className="flex flex-wrap justify-center gap-6 text-[10px] uppercase font-black tracking-widest text-[#c092c9]/40">

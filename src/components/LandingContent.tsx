@@ -39,21 +39,21 @@ const LandingContent: React.FC = () => {
     return (
         <div className="w-full max-w-5xl mx-auto px-4 py-16 sm:py-24 space-y-24">
             {/* Introduction Section */}
-            <section className="space-y-8 text-center">
+            <section className="space-y-8 text-center bg-[#1f1122]/10 p-8 rounded-[40px] border border-white/5">
                 <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true }}
                     transition={{ duration: 0.6 }}
-                    className="space-y-4"
+                    className="space-y-6"
                 >
-                    <h2 className="text-3xl sm:text-4xl font-black text-white tracking-tight">
+                    <h2 className="text-3xl sm:text-5xl font-black text-white tracking-tight leading-tight">
                         The Ultimate <span className="text-[#ce2bee]">QR Code & Bio Link</span> Solution
                     </h2>
-                    <p className="text-[#c092c9] text-lg max-w-3xl mx-auto leading-relaxed">
-                        AIO REXPO QR is a powerful, free-to-use tool designed to bridge the gap between the physical and digital worlds.
+                    <p className="text-[#c092c9] text-lg sm:text-xl max-w-4xl mx-auto leading-relaxed font-light">
+                        AIO REXPO QR is more than just a generator; it is a comprehensive digital asset management tool designed to bridge the gap between the physical and digital worlds.
                         Whether you need a simple QR code for your website, a complex customized design for your brand, or a comprehensive
-                        Link in Bio page, we have you covered.
+                        Link in Bio page, we have you covered with our state-of-the-art, client-side technology.
                     </p>
                 </motion.div>
             </section>
@@ -219,19 +219,36 @@ const LandingContent: React.FC = () => {
                 </div>
             </section>
 
-            {/* Deep Dive Section */}
-            <section className="bg-gradient-to-b from-[#1f1122]/10 to-transparent p-10 rounded-[40px] border border-white/5">
-                <h3 className="text-2xl font-bold text-white mb-6">The Evolution of Digital Connectivity</h3>
-                <div className="space-y-6 text-[#c092c9] text-sm leading-relaxed text-left">
-                    <p>
-                        In the modern digital landscape, the speed of access is everything. AIO REXPO QR was born out of a necessity to simplify how people share their professional identities. By combining the robustness of static QR technology with the aesthetic flexibility of modern web design, we've created a tool that serves as a bridge between high-speed physical interaction and deep digital engagement.
-                    </p>
-                    <p>
-                        Our platform leverages secure cloud technologies to ensure that your Bio Pages are always available and lightning fast. Whether you're a content creator looking to consolidate your social footprint or a business aiming to modernize your contactless service, our infrastructure is optimized to provide the best possible experience for both the creator and the scanner.
-                    </p>
-                    <p>
-                        We continue to invest in our core technology to provide more diverse QR styles, better error correction for damaged codes, and more comprehensive analytics. Our commitment remains: keeping high-quality digital tools free and accessible for the global community of creators.
-                    </p>
+            {/* Deep Dive Section - Technology */}
+            <section className="bg-gradient-to-b from-[#1f1122]/20 to-transparent p-10 rounded-[40px] border border-white/5 space-y-8">
+                <div>
+                    <h3 className="text-2xl font-bold text-white mb-6">The Evolution of Digital Connectivity</h3>
+                    <div className="space-y-6 text-[#c092c9] leading-relaxed text-left">
+                        <p>
+                            In the modern digital landscape, the speed of access is everything. AIO REXPO QR was born out of a necessity to simplify how people share their professional identities. By combining the robustness of static QR technology with the aesthetic flexibility of modern web design, we've created a tool that serves as a bridge between high-speed physical interaction and deep digital engagement.
+                        </p>
+                        <p>
+                            Our platform leverages secure cloud technologies to ensure that your Bio Pages are always available and lightning fast. Whether you're a content creator looking to consolidate your social footprint or a business aiming to modernize your contactless service, our infrastructure is optimized to provide the best possible experience for both the creator and the scanner.
+                        </p>
+                        <p>
+                            We continue to invest in our core technology to provide more diverse QR styles, better error correction for damaged codes, and more comprehensive analytics. Our commitment remains: keeping high-quality digital tools free and accessible for the global community of creators.
+                        </p>
+                    </div>
+                </div>
+
+                <div className="grid md:grid-cols-2 gap-8 pt-8 border-t border-white/5">
+                    <div>
+                        <h4 className="text-xl font-bold text-white mb-4">Client-Side Generation</h4>
+                        <p className="text-[#c092c9] text-sm leading-relaxed">
+                            Unlike other services that generate QR codes on a server, AIO REXPO QR generates your codes directly in your browser. This means your data never leaves your device during the generation process, ensuring maximum privacy and speed. The only data we store is your public profile configuration if you choose to save it.
+                        </p>
+                    </div>
+                    <div>
+                        <h4 className="text-xl font-bold text-white mb-4">High-Resolution Output</h4>
+                        <p className="text-[#c092c9] text-sm leading-relaxed">
+                            We use SVG (Scalable Vector Graphics) technology to render your QR codes. This ensures that no matter how large you print them—be it a business card or a billboard—they will remain crisp and scannable without any pixelation.
+                        </p>
+                    </div>
                 </div>
             </section>
 
