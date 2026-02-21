@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { Users, ArrowLeft, Star, Heart, Coffee } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import AdSenseScript from '../components/AdSenseScript';
+import AdUnit from '../components/AdUnit';
 
 const About: React.FC = () => {
     const navigate = useNavigate();
@@ -10,6 +11,7 @@ const About: React.FC = () => {
     return (
         <div className="min-h-screen bg-[#0a050c] text-white selection:bg-[#ce2bee]/30 pb-20">
             <AdSenseScript />
+            <AdUnit />
             {/* Dynamic Background */}
             <div className="fixed inset-0 overflow-hidden pointer-events-none">
                 <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-[#ce2bee]/10 blur-[120px] rounded-full" />

@@ -31,6 +31,7 @@ const LoginPage = lazy(() => import('./components/LoginPage'));
 const AdminPage = lazy(() => import('./components/AdminPage'));
 import LandingContent from './components/LandingContent';
 import AdSenseScript from './components/AdSenseScript';
+import AdUnit from './components/AdUnit';
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -756,6 +757,8 @@ function App() {
                   </p>
                 </div>
               </div>
+
+              <AdUnit />
             </div>
 
           )}
