@@ -29,9 +29,7 @@ import BioPage from './components/BioPage';
 // Optimize secondary components with lazy loading
 const LoginPage = lazy(() => import('./components/LoginPage'));
 const AdminPage = lazy(() => import('./components/AdminPage'));
-import LandingContent from './components/LandingContent';
 import AdSenseScript from './components/AdSenseScript';
-import AdUnit from './components/AdUnit';
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -758,7 +756,6 @@ function App() {
                 </div>
               </div>
 
-              <AdUnit />
             </div>
 
           )}
@@ -838,8 +835,6 @@ function App() {
           includeMargin={true}
         />
       </div>
-
-      <LandingContent />
 
       <footer className="w-full text-center py-10 mt-12 space-y-4 border-t border-white/5 bg-[#0a050c]/80 backdrop-blur-md">
         <div className="flex flex-wrap justify-center gap-6 text-[10px] uppercase font-black tracking-widest text-[#c092c9]/40">
