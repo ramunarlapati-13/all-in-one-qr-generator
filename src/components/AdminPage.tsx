@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { rtdb } from '../firebase';
-import { ref, onValue } from 'firebase/database';
+import { ref, onValue, query, orderByChild } from 'firebase/database';
 import { Shield, Users, Clock, Mail, User as UserIcon } from 'lucide-react';
 import { motion } from 'framer-motion';
 
@@ -20,18 +20,19 @@ const AdminPage: React.FC = () => {
 
     useEffect(() => {
         const usersRef = ref(rtdb, 'users');
-        const unsubscribe = onValue(usersRef, (snapshot) => {
-            const data = snapshot.val();
-            if (data) {
-                // Convert object { uid: { data... } } to array
-                const usersList = Object.values(data) as UserStatus[];
+        const sortedUsersQuery = query(usersRef, orderByChild('lastActive'));
 
-                // Sort by lastActive
-                const sortedUsers = usersList.sort((a, b) => {
-                    return (b.lastActive || 0) - (a.lastActive || 0);
+        const unsubscribe = onValue(sortedUsersQuery, (snapshot) => {
+            if (snapshot.exists()) {
+                const usersList: UserStatus[] = [];
+
+                // Firebase snapshots maintain the sorted order when using forEach
+                snapshot.forEach((childSnapshot) => {
+                    usersList.push(childSnapshot.val() as UserStatus);
                 });
 
-                setUsers(sortedUsers);
+                // Reverse to get descending order (newest first)
+                setUsers(usersList.reverse());
             } else {
                 setUsers([]);
             }
