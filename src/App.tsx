@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect, lazy, Suspense } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { auth, db, rtdb } from './firebase';
-import { onAuthStateChanged } from 'firebase/auth';
+import { onAuthStateChanged, type User as FirebaseUser } from 'firebase/auth';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { ref, set, get, onDisconnect } from 'firebase/database';
 import { QRCodeSVG } from 'qrcode.react';
@@ -74,7 +74,7 @@ function App() {
   const [qrBgColor, setQrBgColor] = useState('#ffffff');
   const [copying, setCopying] = useState(false);
   const [showLoginPopup, setShowLoginPopup] = useState(false);
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<FirebaseUser | null>(null);
   const [saving, setSaving] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [showShareToast, setShowShareToast] = useState(false);
