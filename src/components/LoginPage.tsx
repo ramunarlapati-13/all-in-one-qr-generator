@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { auth } from '../firebase';
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, sendPasswordResetEmail, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
 import type { User } from 'firebase/auth';
+import { FirebaseError } from 'firebase/app';
 import { Eye, EyeOff, CheckCircle } from 'lucide-react';
 
 const LoginPage: React.FC = () => {
@@ -29,16 +30,22 @@ const LoginPage: React.FC = () => {
         const provider = new GoogleAuthProvider();
         try {
             await signInWithPopup(auth, provider);
-        } catch (err: any) {
+        } catch (err: unknown) {
             console.error("Google Sign In Error:", err);
-            if (err.code === 'auth/popup-closed-by-user') {
-                setError('Sign in cancelled.');
-            } else if (err.code === 'auth/operation-not-allowed') {
-                setError('Google Sign In is not enabled in Firebase Console.');
-            } else if (err.code === 'auth/unauthorized-domain') {
-                setError('This domain is not authorized in Firebase Console.');
-            } else {
+            if (err instanceof FirebaseError) {
+                if (err.code === 'auth/popup-closed-by-user') {
+                    setError('Sign in cancelled.');
+                } else if (err.code === 'auth/operation-not-allowed') {
+                    setError('Google Sign In is not enabled in Firebase Console.');
+                } else if (err.code === 'auth/unauthorized-domain') {
+                    setError('This domain is not authorized in Firebase Console.');
+                } else {
+                    setError(err.message);
+                }
+            } else if (err instanceof Error) {
                 setError(err.message);
+            } else {
+                setError('An unknown error occurred.');
             }
         } finally {
             setLoading(false);
@@ -71,13 +78,19 @@ const LoginPage: React.FC = () => {
                 await sendPasswordResetEmail(auth, email);
                 setMessage('Password reset email sent! Check your inbox.');
             }
-        } catch (err: any) {
-            if (err.code === 'auth/invalid-credential' || err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password') {
-                setError('Invalid credentials, please check Email or Password');
-            } else if (err.code === 'auth/email-already-in-use') {
-                setError('This email is already registered. Please sign in instead.');
-            } else {
+        } catch (err: unknown) {
+            if (err instanceof FirebaseError) {
+                if (err.code === 'auth/invalid-credential' || err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password') {
+                    setError('Invalid credentials, please check Email or Password');
+                } else if (err.code === 'auth/email-already-in-use') {
+                    setError('This email is already registered. Please sign in instead.');
+                } else {
+                    setError(err.message);
+                }
+            } else if (err instanceof Error) {
                 setError(err.message);
+            } else {
+                setError('An unknown error occurred.');
             }
         } finally {
             setLoading(false);
