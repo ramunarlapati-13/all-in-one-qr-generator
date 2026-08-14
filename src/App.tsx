@@ -372,9 +372,13 @@ function App() {
 
         <main>
           {activeTab === 'admin' ? (
-            <Suspense fallback={<div className="p-20 flex justify-center"><div className="w-8 h-8 border-4 border-[#ce2bee]/20 border-t-[#ce2bee] rounded-full animate-spin" /></div>}>
-              <AdminPage />
-            </Suspense>
+            user && user.email === import.meta.env.VITE_ADMIN_EMAIL ? (
+              <Suspense fallback={<div className="p-20 flex justify-center"><div className="w-8 h-8 border-4 border-[#ce2bee]/20 border-t-[#ce2bee] rounded-full animate-spin" /></div>}>
+                <AdminPage />
+              </Suspense>
+            ) : (
+              <div className="p-20 flex justify-center text-red-500 font-bold text-xl">Unauthorized Access</div>
+            )
           ) : (
             <div className="flex flex-col gap-12 max-w-3xl mx-auto">
               {/* Configuration Panel */}
