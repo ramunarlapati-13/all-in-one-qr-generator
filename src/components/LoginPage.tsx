@@ -67,6 +67,12 @@ const LoginPage: React.FC = () => {
             if (mode === 'signin') {
                 await signInWithEmailAndPassword(auth, email, password);
             } else if (mode === 'signup') {
+                const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/;
+                if (!passwordRegex.test(password)) {
+                    setError('Password must be at least 8 characters and include uppercase, lowercase, number, and special character');
+                    setLoading(false);
+                    return;
+                }
                 await createUserWithEmailAndPassword(auth, email, password);
                 alert('Account created successfully!');
             } else if (mode === 'forgot') {
