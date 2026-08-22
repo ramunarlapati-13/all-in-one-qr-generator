@@ -230,7 +230,6 @@ function App() {
         };
         await setDoc(doc(db, 'profiles', user.uid), profileData);
         setLastSaved(new Date());
-        console.log('Profile auto-saved successfully');
       } catch (e) {
         console.error('Auto-save failed:', e);
         // If it's a permission error, it might be due to Firestore rules
