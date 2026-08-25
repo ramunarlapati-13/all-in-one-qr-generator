@@ -26,15 +26,17 @@ const AdminPage: React.FC = () => {
 
         const unsubscribe = onValue(sortedUsersQuery, (snapshot) => {
             if (snapshot.exists()) {
-                const usersList: UserStatus[] = [];
+                const total = snapshot.size;
+                const usersList: UserStatus[] = new Array(total);
+                let index = total;
 
-                // Firebase snapshots maintain the sorted order when using forEach
+                // Firebase snapshots maintain ascending order when using forEach;
+                // populate in reverse order directly to get descending order (newest first)
                 snapshot.forEach((childSnapshot) => {
-                    usersList.push(childSnapshot.val() as UserStatus);
+                    usersList[--index] = childSnapshot.val() as UserStatus;
                 });
 
-                // Reverse to get descending order (newest first)
-                setUsers(usersList.reverse());
+                setUsers(usersList);
             } else {
                 setUsers([]);
             }
