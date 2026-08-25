@@ -201,8 +201,6 @@ function App() {
           isOnline: false,
           lastActive: Date.now()
         });
-
-        console.log("Activity tracked (RTDB) for:", user.email);
       } catch (e) {
         console.error('Tracking failed:', e);
       }
