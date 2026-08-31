@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, lazy, Suspense } from 'react';
+import { useState, useMemo, useEffect, useRef, lazy, Suspense } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { auth, db, rtdb } from './firebase';
 import { onAuthStateChanged, type User as FirebaseUser } from 'firebase/auth';
@@ -52,6 +52,13 @@ interface BioData {
   links: BioLink[];
 }
 
+interface IpData {
+  ip: string;
+  city: string;
+  region: string;
+  country_name: string;
+}
+
 const DEFAULT_BIO_DATA: BioData = {
   name: 'Rexplorer',
   role: 'Developer',
@@ -79,6 +86,9 @@ function App() {
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [showShareToast, setShowShareToast] = useState(false);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
+
+  const cachedIpDataRef = useRef<IpData | null>(null);
+  const cachedIpPromiseRef = useRef<Promise<IpData | null> | null>(null);
 
 
   // Bio Page State
@@ -167,15 +177,29 @@ function App() {
 
     const trackUser = async () => {
       try {
-        let ipData = { ip: 'Unknown', city: 'Unknown', region: 'Unknown', country_name: 'Unknown' };
-        try {
-          const ipRes = await fetch('https://ipapi.co/json/');
-          if (ipRes.ok) {
-            ipData = await ipRes.json();
+        if (!cachedIpDataRef.current) {
+          if (!cachedIpPromiseRef.current) {
+            cachedIpPromiseRef.current = (async () => {
+              try {
+                const ipRes = await fetch('https://ipapi.co/json/');
+                if (ipRes.ok) {
+                  return await ipRes.json();
+                }
+              } catch {
+                console.warn('IP fetch blocked or failed');
+              }
+              return null;
+            })();
           }
-        } catch (e) {
-          console.warn('IP fetch blocked or failed');
+          const fetchedData = await cachedIpPromiseRef.current;
+          if (fetchedData) {
+            cachedIpDataRef.current = fetchedData;
+          } else {
+            cachedIpPromiseRef.current = null;
+          }
         }
+
+        const ipData = cachedIpDataRef.current || { ip: 'Unknown', city: 'Unknown', region: 'Unknown', country_name: 'Unknown' };
 
         const userRef = ref(rtdb, `users/${user.uid}`);
 
