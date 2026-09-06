@@ -4,18 +4,18 @@ import { getAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 import { getDatabase } from "firebase/database";
 
-const firebaseConfig = {
-    apiKey: "AIzaSyDxQ1qWt481GHl2LyC8TT_qE7SzxYTB3R8",
-    authDomain: "rexplore-qr.firebaseapp.com",
-    projectId: "rexplore-qr",
-    storageBucket: "rexplore-qr.firebasestorage.app",
-    messagingSenderId: "70964310981",
-    appId: "1:70964310981:web:61d6b86846d34de72011ac",
-    measurementId: "G-3N847Y0WCP"
+export const firebaseConfig = {
+    apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "",
+    authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "",
+    projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || "",
+    storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || "",
+    messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "",
+    appId: import.meta.env.VITE_FIREBASE_APP_ID || "",
+    measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID || ""
 };
 
 const app = initializeApp(firebaseConfig);
-export const analytics = getAnalytics(app);
+export const analytics = typeof window !== "undefined" && firebaseConfig.measurementId ? getAnalytics(app) : null;
 export const auth = getAuth(app);
 export const db = getFirestore(app);
 export const rtdb = getDatabase(app);

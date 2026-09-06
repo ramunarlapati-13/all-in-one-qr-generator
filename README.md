@@ -62,7 +62,11 @@ src/
    ```bash
    npm install
    ```
-3. Setup `.env` (ensure Firebase config is in `src/firebase.ts`)
+3. Setup environment variables:
+   ```bash
+   cp .env.example .env
+   ```
+   Fill in your Firebase project credentials in `.env`.
 4. Run locally:
    ```bash
    npm run dev
