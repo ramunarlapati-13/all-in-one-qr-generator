@@ -2,7 +2,7 @@ import React, { useEffect } from 'react';
 
 declare global {
     interface Window {
-        adsbygoogle: any[];
+        adsbygoogle: Record<string, unknown>[];
     }
 }
 
