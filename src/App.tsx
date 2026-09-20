@@ -575,7 +575,7 @@ function App() {
                                 value={link.icon}
                                 onChange={(e) => {
                                   const newLinks = [...bioData.links];
-                                  newLinks[idx].icon = e.target.value as any;
+                                  newLinks[idx].icon = e.target.value as IconType;
                                   newLinks[idx].label = e.target.options[e.target.selectedIndex].text;
                                   setBioData({ ...bioData, links: newLinks });
                                 }}
